@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.library.ModelCopyManager;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
 
@@ -41,7 +42,7 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 
 	@Override
 	public String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
-		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this);
+		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this, new ModelCopyManager());
 		
 	}
 }

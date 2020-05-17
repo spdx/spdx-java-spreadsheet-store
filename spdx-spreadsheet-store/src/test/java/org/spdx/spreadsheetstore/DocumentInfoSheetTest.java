@@ -42,7 +42,7 @@ import junit.framework.TestCase;
  * @author gary
  *
  */
-public class DocumentInfoSheetV2d0Test extends TestCase {
+public class DocumentInfoSheetTest extends TestCase {
 
 	private static final String DOCUMENT_URI = "http://spdx.org/test";
 	IModelStore modelStore;

@@ -26,6 +26,7 @@ import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -433,7 +434,7 @@ public abstract class AbstractSheet {
 	 * @param csv
 	 * @return
 	 */
-	public static Collection<String> csvToStrings(String csv) {
+	public static List<String> csvToStrings(String csv) {
 		StringReader reader = new StringReader(csv);
 		final CSVReader csvReader = new CSVReaderBuilder(reader)
 				.withCSVParser(parser)

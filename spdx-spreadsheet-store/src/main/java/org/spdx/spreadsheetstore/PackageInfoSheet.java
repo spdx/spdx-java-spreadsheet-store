@@ -17,14 +17,12 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.storage.IModelStore;
 
 /**
@@ -67,13 +65,13 @@ public abstract class PackageInfoSheet extends AbstractSheet {
 	public static PackageInfoSheet openVersion(Workbook workbook,
 			String packageInfoSheetName, String version, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
-//		if (version.compareTo(SpdxSpreadsheet.VERSION_2_0_0) <= 0) {
-//			return new PackageInfoSheetV2d0(workbook, packageInfoSheetName, version);
-//		} else if (version.compareTo(SpdxSpreadsheet.VERSION_2_1_0) <= 0) {
-//			return new PackageInfoSheetV2d1(workbook, packageInfoSheetName, version);
-//		} else {
+		if (version.compareTo(SpdxSpreadsheet.VERSION_2_0_0) <= 0) {
+			return new PackageInfoSheetV2d0(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
+		} else if (version.compareTo(SpdxSpreadsheet.VERSION_2_1_0) <= 0) {
+			return new PackageInfoSheetV2d1(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
+		} else {
 			return new PackageInfoSheetV2d2(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
-//		}
+		}
 	}
 
 	/**

@@ -67,11 +67,11 @@ public class SpdxSpreadsheet {
 	static final String DOCUMENT_INFO_NAME = "Document Info";
 	private PackageInfoSheet packageInfoSheet;
 	static final String PACKAGE_INFO_SHEET_NAME = "Package Info";
-/*	private NonStandardLicensesSheet nonStandardLicensesSheet;
+	private ExtractedLicenseInfoSheet extractedLicenseInfoSheet;
 	static final String NON_STANDARD_LICENSE_SHEET_NAME = "Extracted License Info";
 	private PerFileSheet perFileSheet;
 	static final String PER_FILE_SHEET_NAME = "Per File Info";
-	private RelationshipsSheet relationshipsSheet;
+/*	private RelationshipsSheet relationshipsSheet;
 	static final String RELATIONSHIPS_SHEET_NAME = "Relationships";
 	private AnnotationsSheet annotationsSheet;
 	static final String ANNOTATIONS_SHEET_NAME = "Annotations";
@@ -114,9 +114,9 @@ public class SpdxSpreadsheet {
 		}
 		this.documentUri = this.documentInfoSheet.getNamespace();
 		this.packageInfoSheet = PackageInfoSheet.openVersion(this.workbook, PACKAGE_INFO_SHEET_NAME, this.version, modelStore, this.documentUri, copyManager);
-/*		this.nonStandardLicensesSheet = NonStandardLicensesSheetV0d9d4.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version);
+		this.extractedLicenseInfoSheet = ExtractedLicenseInfoSheet.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version);
 		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version);
-		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME);
+/*		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME);
 		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME);
 		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, version);
 		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME);
