@@ -19,7 +19,6 @@ package org.spdx.spreadsheetstore;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,7 +70,7 @@ public class SpdxSpreadsheet {
 	static final String NON_STANDARD_LICENSE_SHEET_NAME = "Extracted License Info";
 	private PerFileSheet perFileSheet;
 	static final String PER_FILE_SHEET_NAME = "Per File Info";
-/*	private RelationshipsSheet relationshipsSheet;
+	private RelationshipsSheet relationshipsSheet;
 	static final String RELATIONSHIPS_SHEET_NAME = "Relationships";
 	private AnnotationsSheet annotationsSheet;
 	static final String ANNOTATIONS_SHEET_NAME = "Annotations";
@@ -81,7 +80,7 @@ public class SpdxSpreadsheet {
 	static final String SNIPPET_SHEET_NAME = "Snippets";
 	private ExternalRefsSheet externalRefsSheet;
 	static final String EXTERNAL_REFS_SHEET_NAME = "External Refs";
-*/
+
 	private IModelStore modelStore;
 	private String documentUri;
 	private String version;
@@ -114,10 +113,10 @@ public class SpdxSpreadsheet {
 		}
 		this.documentUri = this.documentInfoSheet.getNamespace();
 		this.packageInfoSheet = PackageInfoSheet.openVersion(this.workbook, PACKAGE_INFO_SHEET_NAME, this.version, modelStore, this.documentUri, copyManager);
-		this.extractedLicenseInfoSheet = ExtractedLicenseInfoSheet.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version);
-		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version);
-/*		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME);
-		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME);
+		this.extractedLicenseInfoSheet = ExtractedLicenseInfoSheet.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
+		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
+		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+/*		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME);
 		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, version);
 		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME);
 		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME);
@@ -162,9 +161,8 @@ public class SpdxSpreadsheet {
 		if (retval == null || retval.isEmpty()) {
 			retval = this.packageInfoSheet.verify();
 		}
-/*
 		if (retval == null || retval.isEmpty()) {
-			retval = this.nonStandardLicensesSheet.verify();
+			retval = this.extractedLicenseInfoSheet.verify();
 		}
 		if (retval == null || retval.isEmpty()) {
 			retval = this.perFileSheet.verify();
@@ -184,7 +182,7 @@ public class SpdxSpreadsheet {
 		if ((retval == null || retval.isEmpty()) && VERSION_2_0_0.compareTo(this.version) < 0) {
 			retval = this.externalRefsSheet.verify();
 		}
-*/
+		
 		return retval;
 	}
 

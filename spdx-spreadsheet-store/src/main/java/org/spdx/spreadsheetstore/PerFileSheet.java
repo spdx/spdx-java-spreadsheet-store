@@ -65,11 +65,11 @@ public abstract class PerFileSheet extends AbstractSheet {
 	public static PerFileSheet openVersion(Workbook workbook,
 			String perFileSheetName, String version, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
-//		if (version.compareTo(SpdxSpreadsheet.VERSION_2_1_0) <= 0) {
-//			return new PerFileSheetV2d0(workbook, perFileSheetName, version, modelStore, documentUri, copyManager);
-//		} else {
+		if (version.compareTo(SpdxSpreadsheet.VERSION_2_1_0) <= 0) {
+			return new PerFileSheetV2d0(workbook, perFileSheetName, version, modelStore, documentUri, copyManager);
+		} else {
 			return new PerFileSheetV2d2(workbook, perFileSheetName, version, modelStore, documentUri, copyManager);
-//		}
+		}
 	}
 
 	/**
