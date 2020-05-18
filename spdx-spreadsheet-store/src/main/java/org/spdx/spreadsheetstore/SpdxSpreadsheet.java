@@ -116,11 +116,11 @@ public class SpdxSpreadsheet {
 		this.extractedLicenseInfoSheet = ExtractedLicenseInfoSheet.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
 		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
 		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME, modelStore, this.documentUri, copyManager);
-/*		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME);
-		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, version);
-		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME);
-		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME);
-*/
+		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+
 		verifyMsg = verifyWorkbook();
 		if (verifyMsg != null) {
 			logger.error(verifyMsg);
@@ -184,6 +184,13 @@ public class SpdxSpreadsheet {
 		}
 		
 		return retval;
+	}
+
+	/**
+	 * @return the documentUri
+	 */
+	public String getDocumentUri() {
+		return this.documentUri;
 	}
 
 }

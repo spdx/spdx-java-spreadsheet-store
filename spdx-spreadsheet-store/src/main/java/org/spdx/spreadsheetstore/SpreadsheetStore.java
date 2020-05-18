@@ -43,6 +43,7 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	@Override
 	public String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this, new ModelCopyManager());
-		
+		//TODO: Implement
+		return ss.getDocumentUri();
 	}
 }
