@@ -355,7 +355,7 @@ public abstract class AbstractSheet {
 			return "";
 		}
 		StringBuilder sb = new StringBuilder(checksum.getAlgorithm().toString());
-		sb.append(' ');
+		sb.append(": ");
 		sb.append(checksum.getValue());
 		return sb.toString();
 	}

@@ -54,7 +54,7 @@ import org.spdx.storage.IModelStore.IdType;
  */
 public class PerFileSheetV2d2 extends PerFileSheet {
 	
-	static final int NUM_COLS = 17;
+	static final int NUM_COLS = 18;
 	static final int FILE_NAME_COL = 0;
 	static final int ID_COL = FILE_NAME_COL + 1;
 	static final int PACKAGE_ID_COL = ID_COL + 1;
@@ -460,7 +460,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 				return "Worksheet for SPDX File does not exist";
 			}
 			Row firstRow = sheet.getRow(firstRowNum);
-			for (int i = 0; i < NUM_COLS- 1; i++) { 	// Don't check the last (user defined) column
+			for (int i = 0; i < NUM_COLS-1; i++) { 	// Don't check the last (user defined) column
 				Cell cell = firstRow.getCell(i+firstCellNum);
 				if (cell == null || 
 						cell.getStringCellValue() == null ||

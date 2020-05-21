@@ -384,13 +384,14 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		
 		Cell checksumsCell = row.getCell(PACKAGE_CHECKSUMS_COL);
 		Collection<Checksum> checksums;
-		if (Objects.isNull(checksumsCell)) {
-			throw new SpreadsheetException("Missing required checksum for package");
-		}
-		try {
-			checksums = strToChecksums(checksumsCell.getStringCellValue());
-		} catch (InvalidSPDXAnalysisException e) {
-			throw(new SpreadsheetException("Error converting file checksums: "+e.getMessage()));
+		if (Objects.isNull(checksumsCell) || checksumsCell.getStringCellValue().isEmpty()) {
+			checksums = new ArrayList<>();
+		} else {
+			try {
+				checksums = strToChecksums(checksumsCell.getStringCellValue());
+			} catch (InvalidSPDXAnalysisException e) {
+				throw(new SpreadsheetException("Error converting file checksums: "+e.getMessage()));
+			}
 		}
 		SpdxPackageBuilder retval = new SpdxPackageBuilder(modelStore, documentUri, id, copyManager, 
 				declaredName, concludedLicense, declaredCopyright, declaredLicenses)
@@ -446,7 +447,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		}
 
 		Cell packageVerificationCell = row.getCell(FILE_VERIFICATION_VALUE_COL);
-		if (Objects.nonNull(packageVerificationCell)) {
+		if (Objects.nonNull(packageVerificationCell) && !packageVerificationCell.getStringCellValue().isEmpty()) {
 			String packageVerificationValue = packageVerificationCell.getStringCellValue();
 			Collection<String> excludedFiles = new ArrayList<String>();
 			

@@ -125,12 +125,6 @@ public class PerFileSheetTest extends TestCase {
 		return retval;
 	}
 
-	private ExtractedLicenseInfo createExtractedLicense(String id, String text) throws InvalidSPDXAnalysisException {
-		ExtractedLicenseInfo retval = new ExtractedLicenseInfo(modelStore, DOCUMENT_URI, id, copyManager, true);
-		retval.setExtractedText(text);
-		return retval;
-	}
-
 	/* (non-Javadoc)
 	 * @see junit.framework.TestCase#tearDown()
 	 */
@@ -319,7 +313,7 @@ public class PerFileSheetTest extends TestCase {
 		assertEquals(2, relationships.size());
 		for (Relationship rel:relationships) {
 			assertTrue(rel.getRelatedSpdxElement().get() instanceof SpdxFile);
-			assertEquals(RelationshipType.DEPENDENCY_OF, rel.getRelationshipType());
+			assertEquals(RelationshipType.DEPENDS_ON, rel.getRelationshipType());
 			assertTrue(rel.getRelatedSpdxElement().get().getId().equals("SPDXRef-File2") ||
 					rel.getRelatedSpdxElement().get().getId().equals("SPDXRef-File3"));
 		}

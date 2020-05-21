@@ -22,13 +22,19 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +78,230 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 
 	@Override
 	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
-		// TODO Auto-generated method stub
-		
+		ModelCopyManager copyManager = new ModelCopyManager();
+		SpdxDocument doc = new SpdxDocument(this, documentUri, copyManager, false);
+		SpdxSpreadsheet ss = new SpdxSpreadsheet(this, copyManager, documentUri);
+		ss.getOriginsSheet().addDocument(doc);
+		Map<String, Collection<ExternalRef>> externalRefs = new TreeMap<String, Collection<ExternalRef>>();
+		Map<String, Collection<Relationship>> allRelationships = new TreeMap<>();
+		Map<String, Collection<Annotation>> allAnnotations = new TreeMap<>();
+		Map<String, String> fileIdToPackageId = copyPackageInfoToSS(documentUri,
+				ss.getPackageInfoSheet(), copyManager, externalRefs, allRelationships, allAnnotations);
+		copyExternalRefsToSS(externalRefs, ss.getExternalRefsSheet());
+		copyExtractedLicenseInfosToSS(doc.getExtractedLicenseInfos(), ss.getExtractedLicenseInfoSheet());
+		copyPerFileInfoToSS(documentUri, copyManager, ss.getPerFileSheet(), fileIdToPackageId, allRelationships, allAnnotations);
+		copySnippetInfoToSS(documentUri, copyManager, ss.getSnippetSheet(), allRelationships, allAnnotations);		
+		allRelationships.put(doc.getId(), doc.getRelationships());
+		allAnnotations.put(doc.getId(), doc.getAnnotations());
+		copyRelationshipsToSS(allRelationships, ss.getRelationshipsSheet());
+		copyAnnotationsToSS(allAnnotations, ss.getAnnotationsSheet());
+		ss.resizeRow();
+		ss.write(stream);
+	}
+	
+	/**
+	 * Copy the annotations ot the annotationsSheet
+	 * @param allAnnotations
+	 * @param annotationsSheet
+	 * @throws SpreadsheetException 
+	 */
+	private void copyAnnotationsToSS(Map<String, Collection<Annotation>> allAnnotations,
+			AnnotationsSheet annotationsSheet) throws SpreadsheetException {
+		for (Entry<String, Collection<Annotation>> entry:allAnnotations.entrySet()) {
+			Annotation[] annotations = entry.getValue().toArray(new Annotation[entry.getValue().size()]);
+			Arrays.sort(annotations);
+			for (Annotation annotation:annotations) {
+				annotationsSheet.add(annotation, entry.getKey());
+			}
+		}
 	}
 
+	/**
+	 * Copy relationships to the relationshipsSheet
+	 * @param allRelationships
+	 * @param relationshipsSheet
+	 * @throws SpreadsheetException 
+	 */
+	private void copyRelationshipsToSS(Map<String, Collection<Relationship>> allRelationships,
+			RelationshipsSheet relationshipsSheet) throws SpreadsheetException {
+		for (Entry<String, Collection<Relationship>> entry:allRelationships.entrySet()) {
+			Relationship[] relationships = entry.getValue().toArray(new Relationship[entry.getValue().size()]);
+			Arrays.sort(relationships);
+			for (Relationship relationship:relationships) {
+				relationshipsSheet.add(relationship, entry.getKey());
+			}
+		}
+	}
+
+	/**
+	 * Copy the snippet information to the snippetSheet and add relationships and annotations to their respective maps
+	 * @param documentUri
+	 * @param copyManager
+	 * @param snippetSheet
+	 * @param allRelationships
+	 * @param allAnnotations
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void copySnippetInfoToSS(String documentUri, ModelCopyManager copyManager, SnippetSheet snippetSheet,
+			Map<String, Collection<Relationship>> allRelationships,
+			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
+		@SuppressWarnings("unchecked")
+		List<SpdxSnippet> snippets = (List<SpdxSnippet>)SpdxModelFactory.getElements(
+				this, documentUri, copyManager, SpdxSnippet.class)
+				.collect(Collectors.toList());
+		Collections.sort(snippets);
+		for (SpdxSnippet snippet:snippets) {
+			snippetSheet.add(snippet);
+			Collection<Relationship> relationships = snippet.getRelationships();
+			if (relationships.size() > 0) {
+				allRelationships.put(snippet.getId(), relationships);
+			}
+			Collection<Annotation> annotations = snippet.getAnnotations();
+			if (annotations.size() > 0) {
+				allAnnotations.put(snippet.getId(), annotations);
+			}
+		}
+	}
+
+	/**
+	 * Copy the file information to the perFileSheet and add relationships and annotations to their respective maps
+	 * @param documentUri
+	 * @param copyManager
+	 * @param perFileSheet
+	 * @param fileIdToPackageId
+	 * @param allRelationships
+	 * @param allAnnotations
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void copyPerFileInfoToSS(String documentUri, ModelCopyManager copyManager, PerFileSheet perFileSheet,
+			Map<String, String> fileIdToPackageId, Map<String, Collection<Relationship>> allRelationships,
+			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
+		@SuppressWarnings("unchecked")
+		List<SpdxFile> files = (List<SpdxFile>)SpdxModelFactory.getElements(
+				this, documentUri, copyManager, SpdxFile.class)
+				.collect(Collectors.toList());
+		Collections.sort(files);
+		for (SpdxFile file:files) {
+			perFileSheet.add(file, fileIdToPackageId.get(file.getId()));
+			Collection<Relationship> relationships = file.getRelationships();
+			if (relationships.size() > 0) {
+				allRelationships.put(file.getId(), relationships);
+			}
+			Collection<Annotation> annotations = file.getAnnotations();
+			if (annotations.size() > 0) {
+				allAnnotations.put(file.getId(), annotations);
+			}
+		}
+	}
+
+	/**
+	 * Copy extractedLicenseInfos to the extracteLicenseInfoSheet
+	 * @param extractedLicenseInfos
+	 * @param extractedLicenseInfoSheet
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void copyExtractedLicenseInfosToSS(Collection<ExtractedLicenseInfo> extractedLicenseInfos,
+			ExtractedLicenseInfoSheet extractedLicenseInfoSheet) throws InvalidSPDXAnalysisException {
+		ExtractedLicenseInfo[] licenses = extractedLicenseInfos.toArray(new ExtractedLicenseInfo[extractedLicenseInfos.size()]);
+		Arrays.sort(licenses, new Comparator<ExtractedLicenseInfo>() {
+
+			@Override
+			public int compare(ExtractedLicenseInfo o1, ExtractedLicenseInfo o2) {
+				int result = 0;
+				try {
+					if (o1.getName() != null && !(o1.getName().trim().isEmpty())) {
+						if (o2.getName() != null && !(o2.getName().trim().isEmpty())) {
+							result = o1.getName().compareToIgnoreCase(o2.getName());
+						} else {
+							result = 1;
+						}
+					} else {
+						result = -1;
+					}
+				} catch (InvalidSPDXAnalysisException e) {
+					result = 0;
+				}
+				if (result == 0) {
+					result = o1.getLicenseId().compareToIgnoreCase(o2.getLicenseId());
+				}
+				return result;
+			}
+			
+		});
+		for(ExtractedLicenseInfo license:licenses) {
+			extractedLicenseInfoSheet.add(license.getLicenseId(), license.getExtractedText(), 
+					license.getName(),
+					license.getSeeAlso(),
+					license.getComment());
+		}
+	}
+
+	/**
+	 * Copy the external references to the externalRefSheet
+	 * @param externalRefsMap map of package ID to collection of external refs
+	 * @param externalRefSheet
+	 * @throws SpreadsheetException
+	 */
+	private void copyExternalRefsToSS(Map<String, Collection<ExternalRef>> externalRefsMap,
+			ExternalRefsSheet externalRefSheet) throws SpreadsheetException {
+		for (Entry<String, Collection<ExternalRef>> entry:externalRefsMap.entrySet()) {
+			ExternalRef[] externalRefs = entry.getValue().toArray(new ExternalRef[entry.getValue().size()]);
+			Arrays.sort(externalRefs);
+			for (ExternalRef externalRef:externalRefs) {
+				externalRefSheet.add(entry.getKey(), externalRef);
+			}
+		}
+	}
+
+	/**
+	 * Copy package information from this store into the packageInfoSheet and update the externalRefs, allRelationships, and allAnnotations with collections from the packages
+	 * @param documentUri document URI for the document containing the packages
+	 * @param packageInfoSheet
+	 * @param copyManager
+	 * @param externalRefs output parameters of external references
+	 * @param allAnnotations 
+	 * @param allRelationships 
+	 * @return map of file IDs to package ID of the package containing the file
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private Map<String, String> copyPackageInfoToSS(String documentUri, PackageInfoSheet packageInfoSheet,
+			ModelCopyManager copyManager, Map<String, Collection<ExternalRef>> externalRefs, Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
+		Map<String, String> fileIdToPkgId = new HashMap<>();
+		@SuppressWarnings("unchecked")
+		List<SpdxPackage> packages = (List<SpdxPackage>)SpdxModelFactory.getElements(
+				this, documentUri, copyManager, SpdxPackage.class)
+				.collect(Collectors.toList());
+		Collections.sort(packages);
+		for (SpdxPackage pkg:packages) {
+			String pkgId = pkg.getId();
+			Collection<SpdxFile> files = pkg.getFiles();
+			for (SpdxFile file:files) {
+				String fileId = file.getId();
+				String pkgIdsForFile = fileIdToPkgId.get(fileId);
+				if (pkgIdsForFile == null) {
+					pkgIdsForFile = pkgId;
+				} else {
+					pkgIdsForFile = pkgIdsForFile + ", " + pkgId;
+				}
+				fileIdToPkgId.put(fileId, pkgIdsForFile);
+			}
+			Collection<ExternalRef> pkgExternalRefs = pkg.getExternalRefs();
+			if (pkgExternalRefs != null && pkgExternalRefs.size() > 0) {
+				externalRefs.put(pkgId, pkgExternalRefs);
+			}
+			packageInfoSheet.add(pkg);
+			Collection<Relationship> relationships = pkg.getRelationships();
+			if (relationships.size() > 0) {
+				allRelationships.put(pkg.getId(), relationships);
+			}
+			Collection<Annotation> annotations = pkg.getAnnotations();
+			if (annotations.size() > 0) {
+				allAnnotations.put(pkg.getId(), annotations);
+			}
+		}
+		return fileIdToPkgId;
+	}
+	
 	@Override
 	public String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
@@ -87,22 +313,30 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 			this.clear(ss.getDocumentUri());
 		}
 		SpdxDocument document = SpdxModelFactory.createSpdxDocument(this, ss.getDocumentUri(), copyManager);
-		copyOrigins(ss.getOriginsSheet(), document, ss.getDocumentUri(), copyManager);
+		copyDocumentInfoFromSS(ss.getOriginsSheet(), document, ss.getDocumentUri(), copyManager);
 		ss.getReviewersSheet().addReviewsToDocAnnotations();
-		copyExtractedLicenseInfos(ss.getExtractedLicenseInfoSheet(), document, ss.getDocumentUri(), copyManager);
+		copyExtractedLicenseInfosFromSS(ss.getExtractedLicenseInfoSheet(), document, ss.getDocumentUri(), copyManager);
 		// note - non std licenses must be added first so that the text is available
-		Map<String, SpdxPackage> pkgIdToPackage = copyPackageInfo(ss.getPackageInfoSheet(), 
+		Map<String, SpdxPackage> pkgIdToPackage = copyPackageInfoFromSS(ss.getPackageInfoSheet(), 
 				ss.getExternalRefsSheet(), document);
 		// note - packages need to be added before the files so that the files can be added to the packages
-		Map<String, SpdxFile> fileIdToFile = copyPerFileInfo(ss.getPerFileSheet(), document, pkgIdToPackage);
+		Map<String, SpdxFile> fileIdToFile = copyPerFileInfoFromSS(ss.getPerFileSheet(), document, pkgIdToPackage);
 		// note - files need to be added before snippets
-		copyPerSnippetInfo(ss.getSnippetSheet(), document,  fileIdToFile);
-		copyAnnotationInfo(ss.getAnnotationsSheet(), document);
-		copyRelationshipInfo(ss.getRelationshipsSheet(), document);
+		copyPerSnippetInfoFromSS(ss.getSnippetSheet(), document,  fileIdToFile);
+		copyAnnotationInfoFromSS(ss.getAnnotationsSheet(), document);
+		copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
 		return ss.getDocumentUri();
 	}
 
-	private void copyExtractedLicenseInfos(ExtractedLicenseInfoSheet extractedLicenseInfoSheet, SpdxDocument document,
+	/**
+	 * Copy the extracted information from the extractedLicenseInfoSheet to document
+	 * @param extractedLicenseInfoSheet
+	 * @param document
+	 * @param documentUri
+	 * @param copyManager
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void copyExtractedLicenseInfosFromSS(ExtractedLicenseInfoSheet extractedLicenseInfoSheet, SpdxDocument document,
 			String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		int numNonStdLicenses = extractedLicenseInfoSheet.getNumDataRows();
 		int firstRow = extractedLicenseInfoSheet.getFirstDataRow();
@@ -117,23 +351,31 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 		}
 	}
 
-	private void copyOrigins(DocumentInfoSheet originsSheet, SpdxDocument document, String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
-		Date createdDate = originsSheet.getCreated();
+	/**
+	 * Copy document information from the documentInfoSheet to the document
+	 * @param documentInfoSheet
+	 * @param document
+	 * @param documentUri
+	 * @param copyManager
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document, String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
+		Date createdDate = documentInfoSheet.getCreated();
 		String created  = format.get().format(createdDate);
-		List<String> createdBys = originsSheet.getCreatedBy();
+		List<String> createdBys = documentInfoSheet.getCreatedBy();
 		SpdxCreatorInformation creationInfo = document.createCreationInfo(createdBys, created); 
-		String creatorComment = originsSheet.getAuthorComments();
+		String creatorComment = documentInfoSheet.getAuthorComments();
 		if (Objects.nonNull(creatorComment)) {
 			creationInfo.setComment(creatorComment);
 		}
-		String licenseListVersion = originsSheet.getLicenseListVersion();
+		String licenseListVersion = documentInfoSheet.getLicenseListVersion();
 		if (Objects.nonNull(licenseListVersion)) {
 			creationInfo.setLicenseListVersion(licenseListVersion);
 		}
 		document.setCreationInfo(creationInfo);
-		String specVersion = originsSheet.getSPDXVersion();
+		String specVersion = documentInfoSheet.getSPDXVersion();
 		document.setSpecVersion(specVersion);
-		String dataLicenseId = originsSheet.getDataLicense();
+		String dataLicenseId = documentInfoSheet.getDataLicense();
 		if (dataLicenseId == null || dataLicenseId.isEmpty()) {
 			dataLicenseId = SpdxConstants.SPDX_DATA_LICENSE_ID;
 		}
@@ -149,24 +391,33 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 			}
 		}
 		document.setDataLicense(dataLicense);
-		String docComment = originsSheet.getDocumentComment();
+		String docComment = documentInfoSheet.getDocumentComment();
 		if (docComment != null) {
 		    docComment = docComment.trim();
 			if (!docComment.isEmpty()) {
 				document.setComment(docComment);
 			}
 		}
-		String docName = originsSheet.getDocumentName();
+		String docName = documentInfoSheet.getDocumentName();
 		if (docName != null) {
 			document.setName(docName);
 		}
-		Collection<ExternalDocumentRef> externalRefs = originsSheet.getExternalDocumentRefs();
+		Collection<ExternalDocumentRef> externalRefs = documentInfoSheet.getExternalDocumentRefs();
 		if (externalRefs != null) {
 			document.setExternalDocumentRefs(externalRefs);
 		}
 	}
 	
-	private Map<String, SpdxPackage> copyPackageInfo(PackageInfoSheet packageInfoSheet,
+	/**
+	 * Copy package information from the packageInfoSheet to the document
+	 * @param packageInfoSheet
+	 * @param externalRefsSheet
+	 * @param analysis
+	 * @return map of ID's to SPDX packages
+	 * @throws SpreadsheetException
+	 * @throws InvalidSPDXAnalysisException
+	 */
+	private Map<String, SpdxPackage> copyPackageInfoFromSS(PackageInfoSheet packageInfoSheet,
 			ExternalRefsSheet externalRefsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
 		List<SpdxPackage> packages = packageInfoSheet.getPackages();
 		Map<String, SpdxPackage> pkgIdToPackage = new HashMap<>();
@@ -184,11 +435,11 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	 * @param perFileSheet
 	 * @param analysis
 	 * @param pkgIdToPackage
-	 * @return
+	 * @return map of file ID's to SpdxFiles
 	 * @throws SpreadsheetException
 	 * @throws InvalidSPDXAnalysisException
 	 */
-	private Map<String, SpdxFile> copyPerFileInfo(PerFileSheet perFileSheet,
+	private Map<String, SpdxFile> copyPerFileInfoFromSS(PerFileSheet perFileSheet,
 			SpdxDocument analysis, Map<String, SpdxPackage> pkgIdToPackage) throws SpreadsheetException, InvalidSPDXAnalysisException {
 		int firstRow = perFileSheet.getFirstDataRow();
 		int numFiles = perFileSheet.getNumDataRows();
@@ -217,7 +468,7 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	 * @throws InvalidSPDXAnalysisException 
 	 * @throws SpreadsheetException 
 	 */
-	private void copyPerSnippetInfo(SnippetSheet snippetSheet,
+	private void copyPerSnippetInfoFromSS(SnippetSheet snippetSheet,
 			SpdxDocument analysis, Map<String, SpdxFile> fileIdToFile) throws InvalidSPDXAnalysisException, SpreadsheetException {
 		int i = snippetSheet.getFirstDataRow();
 		SpdxSnippet snippet = snippetSheet.getSnippet(i++);
@@ -233,7 +484,7 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	 * @throws SpreadsheetException 
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private void copyRelationshipInfo(
+	private void copyRelationshipInfoFromSS(
 			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
 		int i = relationshipsSheet.getFirstDataRow();
 		Relationship relationship = relationshipsSheet.getRelationship(i);
@@ -261,7 +512,7 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	 * @throws InvalidSPDXAnalysisException 
 	 * @throws SpreadsheetException 
 	 */
-	private void copyAnnotationInfo(AnnotationsSheet annotationsSheet,
+	private void copyAnnotationInfoFromSS(AnnotationsSheet annotationsSheet,
 			SpdxDocument analysis) throws InvalidSPDXAnalysisException, SpreadsheetException {
 		int i = annotationsSheet.getFirstDataRow();
 		Annotation annotation = annotationsSheet.getAnnotation(i);

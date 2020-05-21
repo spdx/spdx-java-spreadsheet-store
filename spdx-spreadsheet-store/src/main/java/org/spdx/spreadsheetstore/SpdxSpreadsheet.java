@@ -17,9 +17,9 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +32,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spdx.library.ModelCopyManager;
@@ -137,17 +138,42 @@ public class SpdxSpreadsheet {
 		}
 	}
 	
-	public void create(File spreadsheetFile) throws IOException, SpreadsheetException {
-			Workbook wb = new HSSFWorkbook();
-			DocumentInfoSheet.create(wb, DOCUMENT_INFO_NAME, documentUri);
-			PackageInfoSheet.create(wb, PACKAGE_INFO_SHEET_NAME);
-			ExternalRefsSheet.create(wb, EXTERNAL_REFS_SHEET_NAME);
-			ExtractedLicenseInfoSheet.create(wb, NON_STANDARD_LICENSE_SHEET_NAME);
-			PerFileSheet.create(wb, PER_FILE_SHEET_NAME);
-			RelationshipsSheet.create(wb, RELATIONSHIPS_SHEET_NAME);
-			AnnotationsSheet.create(wb, ANNOTATIONS_SHEET_NAME);
-			SnippetSheet.create(wb, SNIPPET_SHEET_NAME);
-			ReviewersSheet.create(wb, REVIEWERS_SHEET_NAME);
+	/**
+	 * Create a blank SPDX spreadsheet
+	 * @param modelStore
+	 * @param copyManager
+	 * @throws SpreadsheetException 
+	 */
+	public SpdxSpreadsheet(IModelStore modelStore, ModelCopyManager copyManager, String documentUri) throws SpreadsheetException {
+		Objects.requireNonNull(modelStore, "Missing required model store");
+		Objects.requireNonNull(copyManager, "Missing required model copy manager");
+		this.modelStore = modelStore;
+		this.copyManager = copyManager;
+		this.version = CURRENT_VERSION;
+		workbook = new XSSFWorkbook();
+		this.documentUri = documentUri;
+		create();
+		this.documentInfoSheet = DocumentInfoSheet.openVersion(this.workbook, DOCUMENT_INFO_NAME, this.version, modelStore, copyManager);
+		this.packageInfoSheet = PackageInfoSheet.openVersion(this.workbook, PACKAGE_INFO_SHEET_NAME, this.version, modelStore, this.documentUri, copyManager);
+		this.extractedLicenseInfoSheet = ExtractedLicenseInfoSheet.openVersion(this.workbook, NON_STANDARD_LICENSE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
+		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
+		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME, modelStore, this.documentUri, copyManager);
+		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME, modelStore, this.documentUri, copyManager);
+	}
+	
+	private void create() throws SpreadsheetException {
+		DocumentInfoSheet.create(workbook, DOCUMENT_INFO_NAME, documentUri);
+		PackageInfoSheet.create(workbook, PACKAGE_INFO_SHEET_NAME);
+		ExternalRefsSheet.create(workbook, EXTERNAL_REFS_SHEET_NAME);
+		ExtractedLicenseInfoSheet.create(workbook, NON_STANDARD_LICENSE_SHEET_NAME);
+		PerFileSheet.create(workbook, PER_FILE_SHEET_NAME);
+		RelationshipsSheet.create(workbook, RELATIONSHIPS_SHEET_NAME);
+		AnnotationsSheet.create(workbook, ANNOTATIONS_SHEET_NAME);
+		SnippetSheet.create(workbook, SNIPPET_SHEET_NAME);
+		ReviewersSheet.create(workbook, REVIEWERS_SHEET_NAME);
 	}
 	
 	public void clear() {
@@ -402,6 +428,15 @@ public class SpdxSpreadsheet {
 			externalRefsSheet.resizeRows();
 		}
 //		reviewersSheet.resizeRows(); - Can't resize the review sheet since it uses blank cells
+	}
+
+	/**
+	 * Write the spreadsheet to the output stream
+	 * @param stream
+	 * @throws IOException
+	 */
+	public void write(OutputStream stream) throws IOException {
+		this.workbook.write(stream);
 	}
 
 }
