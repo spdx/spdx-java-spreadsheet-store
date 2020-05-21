@@ -304,6 +304,15 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 		
 		SpdxFileBuilder fileBuilder = new SpdxFileBuilder(modelStore, documentUri, id, copyManager, 
 				name, concludedLicense, licenseInfosFromFile, copyrightText, sha1);
+		for (Checksum checksum:checksums) {
+			try {
+				if (!ChecksumAlgorithm.SHA1.equals(checksum.getAlgorithm())) {
+					fileBuilder.addChecksum(checksum);
+				}
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new SpreadsheetException("Error getting checksum value",e);
+			}
+		}
 		
 		String typeStr = row.getCell(FILE_TYPE_COL).getStringCellValue();
 		if (Objects.nonNull(typeStr)) {
@@ -357,13 +366,6 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			} else {
 				projectHomePages = new ArrayList<String>();
 			}
-			Checksum nullSha1;
-			try {
-				nullSha1 = Checksum.create(modelStore, documentUri, ChecksumAlgorithm.SHA1, 
-							"0000000000000000000000000000000000000000");
-			} catch (InvalidSPDXAnalysisException e) {
-				throw new SpreadsheetException("Error creating sha1 for DOAP project for file "+name, e);
-			}
 			AnyLicenseInfo noAssertion;
 			try {
 				noAssertion = new SpdxNoAssertionLicense();
@@ -374,7 +376,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 				SpdxPackageBuilder pkgBuilder = new SpdxPackageBuilder(modelStore, documentUri, 
 						SpdxConstants.SPDX_ELEMENT_REF_PRENUM + "FromDoap-"+Integer.toString(i), 
 						copyManager, projectNames.get(i), noAssertion, SpdxConstants.NOASSERTION_VALUE,
-						nullSha1, noAssertion)
+						noAssertion)
 						.setFilesAnalyzed(false);
 				if (projectHomePages.size() > i) {
 					pkgBuilder.setHomepage(projectHomePages.get(i));
@@ -402,7 +404,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 				SpdxFile dependency = findFileByName(dependencyName.trim());
 				try {
 					retval.addRelationship(retval.createRelationship(dependency, 
-							RelationshipType.DEPENDENCY_OF, "This relationship replaced a file dependency property value"));
+							RelationshipType.DEPENDS_ON, "This relationship replaced a file dependency property value"));
 				} catch (InvalidSPDXAnalysisException e) {
 					throw new SpreadsheetException("Error creating relationship for file dependency for file "+name, e);
 				}

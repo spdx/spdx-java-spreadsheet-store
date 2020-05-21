@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -269,7 +270,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 	}
 	
 	@Override
-	public Collection<String> getCreatedBy() {
+	public List<String> getCreatedBy() {
 		ArrayList<String> retval = new ArrayList<>();
 		int i = 0;
 		while (sheet.getRow(firstRowNum + DATA_ROW_NUM + i) != null &&

@@ -184,12 +184,12 @@ public class ExtractedLicenseInfoSheetV1d1 extends ExtractedLicenseInfoSheet {
 		if (crossRefUrlsCell == null) {
 			return retval;
 		}
-		String val = crossRefUrlsCell.getStringCellValue().trim();
+		String val = crossRefUrlsCell.getStringCellValue();
 		if (val.isEmpty()) {
 			return retval;
 		}
 		for (String url:val.split(",")) {
-			retval.add(url);
+			retval.add(url.trim());
 		}
 		return retval;
 	}

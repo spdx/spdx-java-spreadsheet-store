@@ -36,5 +36,42 @@
     	<artifactId>opencsv</artifactId>
     	<version>4.1</version>
     </dependency>
+    <dependency>
+    	<groupId>org.apache.poi</groupId>
+    	<artifactId>poi-ooxml</artifactId>
+    	<version>4.1.2</version>
+    </dependency>
   </dependencies>
+  <build>
+	<testResources>
+		<testResource>
+			<directory>src/test</directory>
+			<excludes>
+				<exclude>**/*.java</exclude>
+			</excludes>
+		</testResource>
+		<testResource>
+			<filtering>false</filtering>
+			<directory>TestFiles</directory>
+			<includes>
+				<include>**/*</include>
+			</includes>
+		</testResource>
+	</testResources>
+	<plugins>
+		<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.6.1</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+					<showDeprecation>true</showDeprecation>
+					<showWarnings>true</showWarnings>
+					<optimize>true</optimize>
+				</configuration>
+			</plugin>
+	</plugins>
+  </build>
 </project>

@@ -35,7 +35,6 @@ import org.spdx.library.model.Checksum;
 import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxPackage.SpdxPackageBuilder;
 import org.spdx.library.model.SpdxPackageVerificationCode;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.InvalidLicenseStringException;
 import org.spdx.library.model.license.LicenseInfoFactory;
@@ -360,26 +359,17 @@ public class PackageInfoSheetV2d0 extends PackageInfoSheet {
 		
 		Cell checksumsCell = row.getCell(PACKAGE_CHECKSUMS_COL);
 		Collection<Checksum> checksums;
-		Checksum sha1 = null;
 		if (Objects.isNull(checksumsCell)) {
 			throw new SpreadsheetException("Missing required checksum for package");
 		}
 		try {
 			checksums = strToChecksums(checksumsCell.getStringCellValue());
-			for (Checksum checksum:checksums) {
-				if (ChecksumAlgorithm.SHA1.equals(checksum.getAlgorithm())) {
-					if (Objects.nonNull(sha1)) {
-						throw new SpreadsheetException("Multiple SHA1 checksums for package "+declaredName);
-					}
-					sha1 = checksum;
-				}
-			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw(new SpreadsheetException("Error converting file checksums: "+e.getMessage()));
 		}
 
 		SpdxPackageBuilder retval = new SpdxPackageBuilder(modelStore, documentUri, id, copyManager, 
-				declaredName, concludedLicense, declaredCopyright, sha1, declaredLicenses)
+				declaredName, concludedLicense, declaredCopyright, declaredLicenses)
 				.setChecksums(checksums);
 		
 		Cell machineNameCell = row.getCell(MACHINE_NAME_COL);

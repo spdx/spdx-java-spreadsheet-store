@@ -76,7 +76,7 @@ public abstract class AbstractSheet {
 			.withSeparator(CSV_SEPARATOR_CHAR)
 			.build();
 	
-	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+)\\s+(\\S+)");
+	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+):\\s+(\\S+)");
 	
 	// Default style for cells
 	static final String FONT_NAME = "Arial";

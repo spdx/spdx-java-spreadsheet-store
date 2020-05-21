@@ -17,6 +17,7 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.poi.EncryptedDocumentException;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -87,6 +89,13 @@ public class SpdxSpreadsheet {
 
 	private ModelCopyManager copyManager;
 
+	/**
+	 * Open an existing SPDX spreadsheet from an input stream
+	 * @param stream
+	 * @param modelStore
+	 * @param copyManager
+	 * @throws SpreadsheetException
+	 */
 	public SpdxSpreadsheet(InputStream stream, IModelStore modelStore, ModelCopyManager copyManager) throws SpreadsheetException {
 		Objects.requireNonNull(modelStore, "Missing required model store");
 		Objects.requireNonNull(copyManager, "Missing required model copy manager");
@@ -126,6 +135,31 @@ public class SpdxSpreadsheet {
 			logger.error(verifyMsg);
 			throw(new SpreadsheetException(verifyMsg));
 		}
+	}
+	
+	public void create(File spreadsheetFile) throws IOException, SpreadsheetException {
+			Workbook wb = new HSSFWorkbook();
+			DocumentInfoSheet.create(wb, DOCUMENT_INFO_NAME, documentUri);
+			PackageInfoSheet.create(wb, PACKAGE_INFO_SHEET_NAME);
+			ExternalRefsSheet.create(wb, EXTERNAL_REFS_SHEET_NAME);
+			ExtractedLicenseInfoSheet.create(wb, NON_STANDARD_LICENSE_SHEET_NAME);
+			PerFileSheet.create(wb, PER_FILE_SHEET_NAME);
+			RelationshipsSheet.create(wb, RELATIONSHIPS_SHEET_NAME);
+			AnnotationsSheet.create(wb, ANNOTATIONS_SHEET_NAME);
+			SnippetSheet.create(wb, SNIPPET_SHEET_NAME);
+			ReviewersSheet.create(wb, REVIEWERS_SHEET_NAME);
+	}
+	
+	public void clear() {
+		this.documentInfoSheet.clear();
+		this.packageInfoSheet.clear();
+		this.extractedLicenseInfoSheet.clear();
+		this.perFileSheet.clear();
+		this.relationshipsSheet.clear();
+		this.annotationsSheet.clear();
+		this.reviewersSheet.clear();
+		this.snippetSheet.clear();
+		this.externalRefsSheet.clear();
 	}
 	
 	/**
@@ -191,6 +225,183 @@ public class SpdxSpreadsheet {
 	 */
 	public String getDocumentUri() {
 		return this.documentUri;
+	}
+	
+	/**
+	 * @return the originsSheet
+	 */
+	public DocumentInfoSheet getOriginsSheet() {
+		return documentInfoSheet;
+	}
+
+	/**
+	 * @param originsSheet the originsSheet to set
+	 */
+	public void setOriginsSheet(DocumentInfoSheet originsSheet) {
+		this.documentInfoSheet = originsSheet;
+	}
+
+	/**
+	 * @return the packageInfoSheet
+	 */
+	public PackageInfoSheet getPackageInfoSheet() {
+		return packageInfoSheet;
+	}
+
+	/**
+	 * @return the perFileSheet
+	 */
+	public PerFileSheet getPerFileSheet() {
+		return perFileSheet;
+	}
+
+	/**
+	 * @return the reviewersSheet
+	 */
+	public ReviewersSheet getReviewersSheet() {
+		return reviewersSheet;
+	}
+
+	/**
+	 * @param reviewersSheet the reviewersSheet to set
+	 */
+	public void setReviewersSheet(ReviewersSheet reviewersSheet) {
+		this.reviewersSheet = reviewersSheet;
+	}
+	
+	public RelationshipsSheet getRelationshipsSheet() {
+		return relationshipsSheet;
+	}
+
+	public void setRelationshipsSheet(RelationshipsSheet relationshipsSheet) {
+		this.relationshipsSheet = relationshipsSheet;
+	}
+
+	public AnnotationsSheet getAnnotationsSheet() {
+		return annotationsSheet;
+	}
+
+	public void setAnnotationsSheet(AnnotationsSheet annotationsSheet) {
+		this.annotationsSheet = annotationsSheet;
+	}
+
+	public void setPackageInfoSheet(PackageInfoSheet packageInfoSheet) {
+		this.packageInfoSheet = packageInfoSheet;
+	}
+
+	public void setPerFileSheet(PerFileSheet perFileSheet) {
+		this.perFileSheet = perFileSheet;
+	}
+	
+	/**
+	 * @return the snippetSheet
+	 */
+	public SnippetSheet getSnippetSheet() {
+		return snippetSheet;
+	}
+
+	/**
+	 * @param snippetSheet the snippetSheet to set
+	 */
+	public void setSnippetSheet(SnippetSheet snippetSheet) {
+		this.snippetSheet = snippetSheet;
+	}
+	
+	/**
+	 * @return the externalRefsSheet
+	 */
+	public ExternalRefsSheet getExternalRefsSheet() {
+		return externalRefsSheet;
+	}
+
+	/**
+	 * @param snippetSheet the snippetSheet to set
+	 */
+	public void setExternaRefsSheet(ExternalRefsSheet externalRefsSheet) {
+		this.externalRefsSheet = externalRefsSheet;
+	}
+
+	
+	/**
+	 * @return the documentInfoSheet
+	 */
+	public DocumentInfoSheet getDocumentInfoSheet() {
+		return documentInfoSheet;
+	}
+
+	/**
+	 * @param documentInfoSheet the documentInfoSheet to set
+	 */
+	public void setDocumentInfoSheet(DocumentInfoSheet documentInfoSheet) {
+		this.documentInfoSheet = documentInfoSheet;
+	}
+
+	/**
+	 * @return the extractedLicenseInfoSheet
+	 */
+	public ExtractedLicenseInfoSheet getExtractedLicenseInfoSheet() {
+		return extractedLicenseInfoSheet;
+	}
+
+	/**
+	 * @param extractedLicenseInfoSheet the extractedLicenseInfoSheet to set
+	 */
+	public void setExtractedLicenseInfoSheet(ExtractedLicenseInfoSheet extractedLicenseInfoSheet) {
+		this.extractedLicenseInfoSheet = extractedLicenseInfoSheet;
+	}
+
+	/**
+	 * @return the workbook
+	 */
+	public Workbook getWorkbook() {
+		return workbook;
+	}
+
+	/**
+	 * @return the modelStore
+	 */
+	public IModelStore getModelStore() {
+		return modelStore;
+	}
+
+	/**
+	 * @return the version
+	 */
+	public String getVersion() {
+		return version;
+	}
+
+	/**
+	 * @return the copyManager
+	 */
+	public ModelCopyManager getCopyManager() {
+		return copyManager;
+	}
+
+	/**
+	 * @param externalRefsSheet the externalRefsSheet to set
+	 */
+	public void setExternalRefsSheet(ExternalRefsSheet externalRefsSheet) {
+		this.externalRefsSheet = externalRefsSheet;
+	}
+
+	/**
+	 * Resize the height of all rows - will not exceed a maximum height
+	 */
+	public void resizeRow() {
+		extractedLicenseInfoSheet.resizeRows();
+//		originsSheet.resizeRows(); - Can't resize the origins sheet since it uses blank cells
+		packageInfoSheet.resizeRows();
+		perFileSheet.resizeRows();
+		relationshipsSheet.resizeRows();
+		annotationsSheet.resizeRows();
+		if (snippetSheet != null) {
+			snippetSheet.resizeRows();
+		}
+		if (externalRefsSheet != null) {
+			externalRefsSheet.resizeRows();
+		}
+//		reviewersSheet.resizeRows(); - Can't resize the review sheet since it uses blank cells
 	}
 
 }

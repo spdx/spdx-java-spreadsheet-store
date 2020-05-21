@@ -111,7 +111,8 @@ public class PackageInfoSheetTest extends TestCase {
 		Checksum sha1 = Checksum.create(modelStore, DOCUMENT_URI, ChecksumAlgorithm.SHA1, "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
 
 		SpdxPackage pkgInfo1 = new SpdxPackageBuilder(modelStore, DOCUMENT_URI,  "SPDXRef-Package1", copyManager, 
-				"decname1", testLicense1, "dec-copyright1", sha1, testLicense2)
+				"decname1", testLicense1, "dec-copyright1", testLicense2)
+				.addChecksum(sha1)
 				.setComment("Comment1")
 				.setLicenseInfosFromFile(testLicenseInfos)
 				.setLicenseComments("license comments")
@@ -130,7 +131,8 @@ public class PackageInfoSheetTest extends TestCase {
 				.build();
 
 		SpdxPackage pkgInfo2 =  new SpdxPackageBuilder(modelStore, DOCUMENT_URI,  "SPDXRef-Package2", copyManager, 
-				"decname1", testLicense1, "dec-copyright1", sha1, testLicense2)
+				"decname1", testLicense1, "dec-copyright1", testLicense2)
+				.addChecksum(sha1)
 				.setLicenseInfosFromFile(testLicenseInfos)
 				.setComment("Comment1")
 				.setLicenseComments("license comments2")

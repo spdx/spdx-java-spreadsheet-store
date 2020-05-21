@@ -19,6 +19,7 @@ package org.spdx.spreadsheetstore;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -169,7 +170,7 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	/**
 	 * @return
 	 */
-	public abstract Collection<String> getCreatedBy();
+	public abstract List<String> getCreatedBy();
 
 	/**
 	 * @return
