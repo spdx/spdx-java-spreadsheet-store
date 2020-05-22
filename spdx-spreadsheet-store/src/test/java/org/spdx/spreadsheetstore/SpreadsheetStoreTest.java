@@ -389,7 +389,7 @@ public class SpreadsheetStoreTest extends TestCase {
 	 * @throws SpdxCompareException 
 	 */
 	public void testSerialize() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
-		SpreadsheetStore sst = new SpreadsheetStore();
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri = "http://newdoc/uri";
 		ModelCopyManager copyManager = new ModelCopyManager();
 		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstants.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
@@ -416,7 +416,7 @@ public class SpreadsheetStoreTest extends TestCase {
 			try (FileOutputStream out = new FileOutputStream(tempFilePath.toFile())) {
 				sst.serialize(documentUri, out);
 			}
-			SpreadsheetStore resultStore = new SpreadsheetStore();
+			SpreadsheetStore resultStore = new SpreadsheetStore(new InMemSpdxStore());
 			String resultDocUri;
 			try (FileInputStream stream = new FileInputStream(tempFilePath.toFile())) {
 				resultDocUri = resultStore.deSerialize(stream, false);
@@ -465,7 +465,7 @@ public class SpreadsheetStoreTest extends TestCase {
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException {
-		SpreadsheetStore sst = new SpreadsheetStore();
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME)) {
 			documentUri = sst.deSerialize(stream, false);
@@ -504,7 +504,7 @@ public class SpreadsheetStoreTest extends TestCase {
 	}
 	
 	public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
-		SpreadsheetStore sst = new SpreadsheetStore();
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME_XLS)) {
 			documentUri = sst.deSerialize(stream, false);
@@ -543,7 +543,7 @@ public class SpreadsheetStoreTest extends TestCase {
 	}
 	
 	public void testDeSerializeV2() throws InvalidSPDXAnalysisException, IOException {
-		SpreadsheetStore sst = new SpreadsheetStore();
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_0_FILENAME)) {
 			documentUri = sst.deSerialize(stream, false);

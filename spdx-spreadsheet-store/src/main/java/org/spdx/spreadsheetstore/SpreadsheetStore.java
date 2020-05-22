@@ -56,8 +56,9 @@ import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.license.ExtractedLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.model.license.SpdxListedLicense;
+import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
-import org.spdx.storage.simple.InMemSpdxStore;
+import org.spdx.storage.simple.ExtendedSpdxStore;
 
 /**
  * SPDX Java Library store which serializes and deserializes to Microsoft Excel Workbooks
@@ -65,7 +66,7 @@ import org.spdx.storage.simple.InMemSpdxStore;
  * @author Gary O'Neall
  *
  */
-public class SpreadsheetStore extends InMemSpdxStore implements ISerializableModelStore {
+public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializableModelStore {
 	
 	static final Logger logger = LoggerFactory.getLogger(SpreadsheetStore.class);
 	
@@ -76,6 +77,9 @@ public class SpreadsheetStore extends InMemSpdxStore implements ISerializableMod
 	    }
 	  };
 
+	public SpreadsheetStore(IModelStore baseStore) {
+		super(baseStore);
+	}
 	@Override
 	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();

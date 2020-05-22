@@ -424,9 +424,9 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 			throw(new SpreadsheetException("Error getting the document describes: "+e1.getMessage()));
 		}
 		ArrayList<String> contentIds = new ArrayList<>();
-		contents.forEach(element -> {
+		for (SpdxElement element:contents) {
 			contentIds.add(element.getId());
-		});
+		};
 		Collections.sort(contentIds);
 		setDocumentDescribes(contentIds);
 		try {
