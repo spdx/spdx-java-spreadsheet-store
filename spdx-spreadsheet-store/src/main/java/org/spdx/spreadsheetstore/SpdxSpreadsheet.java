@@ -36,6 +36,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spdx.library.ModelCopyManager;
+import org.spdx.spreadsheetstore.SpreadsheetStore.SpreadsheetFormatType;
 import org.spdx.storage.IModelStore;
 
 /**
@@ -142,15 +143,23 @@ public class SpdxSpreadsheet {
 	 * Create a blank SPDX spreadsheet
 	 * @param modelStore
 	 * @param copyManager
+	 * @param spreadsheetFormat 
 	 * @throws SpreadsheetException 
 	 */
-	public SpdxSpreadsheet(IModelStore modelStore, ModelCopyManager copyManager, String documentUri) throws SpreadsheetException {
+	public SpdxSpreadsheet(IModelStore modelStore, ModelCopyManager copyManager, String documentUri, SpreadsheetFormatType spreadsheetFormat) throws SpreadsheetException {
 		Objects.requireNonNull(modelStore, "Missing required model store");
 		Objects.requireNonNull(copyManager, "Missing required model copy manager");
+		Objects.requireNonNull(spreadsheetFormat, "Missing required spreadsheet format");
 		this.modelStore = modelStore;
 		this.copyManager = copyManager;
 		this.version = CURRENT_VERSION;
-		workbook = new XSSFWorkbook();
+		if (SpreadsheetFormatType.XLSX.equals(spreadsheetFormat)) {
+			workbook = new XSSFWorkbook();
+		} else if (SpreadsheetFormatType.XLS.equals(spreadsheetFormat)) {
+			workbook = new HSSFWorkbook();
+		} else {
+			throw new SpreadsheetException("Unsupported spreadsheet format: "+spreadsheetFormat);
+		}
 		this.documentUri = documentUri;
 		create();
 		this.documentInfoSheet = DocumentInfoSheet.openVersion(this.workbook, DOCUMENT_INFO_NAME, this.version, modelStore, copyManager);

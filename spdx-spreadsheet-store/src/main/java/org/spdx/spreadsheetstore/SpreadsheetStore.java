@@ -70,6 +70,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	static final Logger logger = LoggerFactory.getLogger(SpreadsheetStore.class);
 	
+	public enum SpreadsheetFormatType {XLS, XLSX};
+
+	private SpreadsheetFormatType spreadsheetFormat;
+	
 	private static final ThreadLocal<DateFormat> format = new ThreadLocal<DateFormat>(){
 	    @Override
 	    protected DateFormat initialValue() {
@@ -77,14 +81,27 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	    }
 	  };
 
-	public SpreadsheetStore(IModelStore baseStore) {
+	/**
+	 * @param baseStore SPDX model store for deserialization/serialization
+	 * @param spreadsheetFormat format type XLS or XLSX
+	 */
+	public SpreadsheetStore(IModelStore baseStore, SpreadsheetFormatType spreadsheetFormat) {
 		super(baseStore);
+		this.spreadsheetFormat = spreadsheetFormat;
 	}
+	
+	/**
+	 * @param baseStore SPDX model store for deserialization/serialization
+	 */
+	public SpreadsheetStore(IModelStore baseStore) {
+		this(baseStore, SpreadsheetFormatType.XLSX);
+	}
+	
 	@Override
 	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
 		SpdxDocument doc = new SpdxDocument(this, documentUri, copyManager, false);
-		SpdxSpreadsheet ss = new SpdxSpreadsheet(this, copyManager, documentUri);
+		SpdxSpreadsheet ss = new SpdxSpreadsheet(this, copyManager, documentUri, spreadsheetFormat);
 		ss.getOriginsSheet().addDocument(doc);
 		Map<String, Collection<ExternalRef>> externalRefs = new TreeMap<String, Collection<ExternalRef>>();
 		Map<String, Collection<Relationship>> allRelationships = new TreeMap<>();
