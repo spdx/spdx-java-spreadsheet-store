@@ -4,11 +4,11 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-spreadsheet-store</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>0.0.3</version>
   <packaging>jar</packaging>
 
   <name>spdx-spreadsheet-store</name>
-  <url>http://maven.apache.org</url>
+  <url>http://github.com/spdx/spdx-spreadsheet-store</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,7 +24,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>0.0.2-SNAPSHOT</version>
+    	<version>0.0.3</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.poi</groupId>
