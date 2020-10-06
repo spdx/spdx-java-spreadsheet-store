@@ -70,21 +70,22 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 	int FULL_DESC_COL = SHORT_DESC_COL + 1;
 	int ATTRIBUTION_COL = FULL_DESC_COL + 1;
 	int FILES_ANALYZED_COL = ATTRIBUTION_COL + 1;
-	int USER_DEFINED_COL = FILES_ANALYZED_COL + 1;
+	int COMMENT_COL = FILES_ANALYZED_COL + 1;
+	int USER_DEFINED_COL = COMMENT_COL + 1;
 	int NUM_COLS = USER_DEFINED_COL;
 
 	
 	static final boolean[] REQUIRED = new boolean[] {true, true, false, false, false, false, false, true, 
-		false, false, false, false, true, true, false, false, true, false, false, false, false, false, false};
+		false, false, false, false, true, true, false, false, true, false, false, false, false, false, false, false};
 	static final String[] HEADER_TITLES = new String[] {"Package Name", "SPDX Identifier", "Package Version", 
 		"Package FileName", "Package Supplier", "Package Originator", "Home Page",
 		"Package Download Location", "Package Checksum", "Package Verification Code",
 		"Verification Code Excluded Files", "Source Info", "License Declared", "License Concluded", "License Info From Files", 
 		"License Comments", "Package Copyright Text", "Summary", "Description", 
-		"Attribution Text", "Files Analyzed", "User Defined Columns..."};
+		"Attribution Text", "Files Analyzed", "Comments", "User Defined Columns..."};
 	
 	static final int[] COLUMN_WIDTHS = new int[] {30, 17, 17, 30, 30, 30, 50, 50, 75, 60, 40, 30,
-		40, 40, 90, 50, 50, 50, 80, 80, 10, 50};
+		40, 40, 90, 50, 50, 50, 80, 80, 10, 50, 50};
 
 
 	/**
@@ -322,6 +323,9 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		} else {
 			filesAnalyzedCell.setCellValue("false");
 		}
+		if (pkgInfo.getComment().isPresent()) {
+			row.createCell(COMMENT_COL).setCellValue(pkgInfo.getComment().get());
+		}
 	}
 
 	/* (non-Javadoc)
@@ -398,7 +402,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 				.setChecksums(checksums);
 		
 		Cell machineNameCell = row.getCell(MACHINE_NAME_COL);
-		if (Objects.nonNull(machineNameCell)) {
+		if (Objects.nonNull(machineNameCell) && !machineNameCell.getStringCellValue().isEmpty()) {
 			retval.setPackageFileName(row.getCell(MACHINE_NAME_COL).getStringCellValue());
 		}
 
@@ -408,7 +412,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		}
 
 		Cell licenseInfoInFilesCell = row.getCell(LICENSE_INFO_IN_FILES_COL);
-		if (Objects.nonNull(licenseInfoInFilesCell)) {
+		if (Objects.nonNull(licenseInfoInFilesCell) && !licenseInfoInFilesCell.getStringCellValue().isEmpty()) {
 			String[] licenseStrings = row.getCell(LICENSE_INFO_IN_FILES_COL).getStringCellValue().split(",");
 			Collection<AnyLicenseInfo> licenseInfosFromFiles = new ArrayList<>();
 			for (int i = 0; i < licenseStrings.length; i++) {
@@ -442,7 +446,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		}
 
 		Cell downloadUrlCell = row.getCell(DOWNLOAD_URL_COL);
-		if (downloadUrlCell != null) {
+		if (downloadUrlCell != null && !downloadUrlCell.getStringCellValue().isEmpty()) {
 			retval.setDownloadLocation(downloadUrlCell.getStringCellValue());
 		}
 
@@ -513,6 +517,10 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 				}
 			}
 			retval.setFilesAnalyzed(filesAnalyzed);
+		}
+		Cell commentCell = row.getCell(COMMENT_COL);
+		if (Objects.nonNull(commentCell) && !commentCell.getStringCellValue().isEmpty()) {
+			retval.setComment(commentCell.getStringCellValue());
 		}
 		try {
 			return retval.build();
