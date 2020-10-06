@@ -476,7 +476,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		}
 		
 		Cell versionInfoCell = row.getCell(VERSION_COL);
-		if (Objects.nonNull(versionInfoCell) && !versionInfoCell.getStringCellValue().isEmpty()) {
+		if (Objects.nonNull(versionInfoCell)) {
 			String versionInfo;
 			if (versionInfoCell.getCellType()== CellType.STRING  && !versionInfoCell.getStringCellValue().isEmpty()) {
 				versionInfo = versionInfoCell.getStringCellValue();
