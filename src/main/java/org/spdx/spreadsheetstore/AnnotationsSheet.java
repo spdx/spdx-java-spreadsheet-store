@@ -17,6 +17,8 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.text.SimpleDateFormat;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -25,6 +27,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.Annotation;
 import org.spdx.library.model.enumerations.AnnotationType;
 import org.spdx.storage.IModelStore;
@@ -53,6 +56,8 @@ public class AnnotationsSheet extends AbstractSheet {
 	static final boolean[] CENTER_NOWRAP = new boolean[] {true, false, true, false, true, false};
 
 	static final boolean[] REQUIRED = new boolean[] {true, true, true, true, true, false};
+	
+	static final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
 
 
 	/**
@@ -195,10 +200,13 @@ public class AnnotationsSheet extends AbstractSheet {
 		}
 		String date = null;
 		Cell dateCell = row.getCell(DATE_COL);
-		if (dateCell != null) {
+		if (dateCell == null || dateCell.getCellType() == CellType.BLANK) {
+		    throw new SpreadsheetException("Missing required annotation date");
+		}
+		if (dateCell.getCellType() == CellType.STRING) {
 			date = dateCell.getStringCellValue();
-		} else {
-			throw new SpreadsheetException("Missing required annotation date");
+		} else if (dateCell.getCellType() == CellType.NUMERIC) {
+		    date = dateFormat.format(dateCell.getDateCellValue());
 		}
 		String annotator = null;
 		Cell annotatorCell = row.getCell(ANNOTATOR_COL);

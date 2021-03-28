@@ -147,7 +147,8 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 	private String validateRow(Row row) {
 		for (int i = 0; i < NUM_COLS; i++) {
 			Cell cell = row.getCell(i);
-			if (cell == null) {
+			if (cell == null || cell.getCellType() == CellType.BLANK ||
+			        (cell.getCellType() == CellType.STRING && cell.getStringCellValue().trim().isEmpty())) {
 				if (REQUIRED[i]) {
 					return "Required cell "+HEADER_TITLES[i]+" missing for row "+String.valueOf(row.getRowNum() + " in PackageInfo sheet.");
 				}
@@ -198,7 +199,10 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 					}
 				} else if (i == FILES_ANALYZED_COL) {
 					Cell filesAnalyzedCell = row.getCell(FILES_ANALYZED_COL);
-					if (filesAnalyzedCell != null && filesAnalyzedCell.getStringCellValue() != null) {
+					if (filesAnalyzedCell != null && filesAnalyzedCell.getCellType() != CellType.BLANK &&
+					        filesAnalyzedCell.getCellType() != CellType.BOOLEAN &&
+					        filesAnalyzedCell.getStringCellValue() != null &&
+					        !filesAnalyzedCell.getStringCellValue().isEmpty()) {
 						String filesAnalyzedStr = filesAnalyzedCell.getStringCellValue().trim().toLowerCase();
 						if (!filesAnalyzedStr.equals("true") && !filesAnalyzedStr.equals("false")) {
 							return "Invalid value for files analyzed (expecting 'true' or 'false') in row "+String.valueOf(row.getRowNum()) + ":" + filesAnalyzedStr;
