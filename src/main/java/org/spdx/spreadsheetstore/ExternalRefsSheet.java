@@ -249,7 +249,7 @@ public class ExternalRefsSheet extends AbstractSheet {
 				Cell refCategoryCell = row.getCell(REF_CATEGORY_COL);
 				if (refCategoryCell != null) {
 					try {
-						er.setReferenceCategory(ReferenceCategory.valueOf(refCategoryCell.getStringCellValue().trim()));
+						er.setReferenceCategory(ReferenceCategory.valueOf(refCategoryCell.getStringCellValue().trim().replace('-','_')));
 					} catch(Exception ex) {
 						throw new SpreadsheetException("Invalid reference category: "+refCategoryCell.getStringCellValue());
 					}
