@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
@@ -388,7 +389,8 @@ public class SpreadsheetStoreTest extends TestCase {
 	 * @throws IOException 
 	 * @throws SpdxCompareException 
 	 */
-	public void testSerialize() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+	@SuppressWarnings("unchecked")
+    public void testSerialize() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri = "http://newdoc/uri";
 		ModelCopyManager copyManager = new ModelCopyManager();
@@ -430,29 +432,37 @@ public class SpreadsheetStoreTest extends TestCase {
 			comparer.compare(compareDocument, doc);
 			assertFalse(comparer.isDifferenceFound());
 			// Files
-			SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class).forEach(element -> {
-				try {
-					assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
-				} catch (InvalidSPDXAnalysisException e) {
-					fail("Exception: "+e.getMessage());
-				}
-			});
+			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+			    elementStream.forEach(element -> {
+	                try {
+	                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
+	                } catch (InvalidSPDXAnalysisException e) {
+	                    fail("Exception: "+e.getMessage());
+	                }
+	            });
+			}
+			
 			// Packages
-			SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class).forEach(element -> {
-				try {
-					assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
-				} catch (InvalidSPDXAnalysisException e) {
-					fail("Exception: "+e.getMessage());
-				}
-			});
+           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+                elementStream.forEach(element -> {
+                    try {
+                        assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+                    } catch (InvalidSPDXAnalysisException e) {
+                        fail("Exception: "+e.getMessage());
+                    }
+                });
+            }
+
 			// Snippets
-			SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class).forEach(element -> {
-				try {
-					assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
-				} catch (InvalidSPDXAnalysisException e) {
-					fail("Exception: "+e.getMessage());
-				}
-			});
+            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+               elementStream.forEach(element -> {
+                   try {
+                       assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
+                   } catch (InvalidSPDXAnalysisException e) {
+                       fail("Exception: "+e.getMessage());
+                   }
+               });
+            }
 		} finally {
 			tempFilePath.toFile().delete();
 		}
@@ -464,7 +474,8 @@ public class SpreadsheetStoreTest extends TestCase {
 	 * @throws IOException 
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException {
+	@SuppressWarnings("unchecked")
+    public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME)) {
@@ -478,32 +489,41 @@ public class SpreadsheetStoreTest extends TestCase {
 		assertDocFields(doc, "SPDX-2.2");
 
 		// Packages
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+		try(Stream<SpdxElement> packageStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+		    packageStream.forEach(element -> {
+    			try {
+    				assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+    			} catch (InvalidSPDXAnalysisException e) {
+    				fail("Exception: "+e.getMessage());
+    			}
+    		});
+		}
 		// Files
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+          elementStream.forEach(element -> {
+                try {
+                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
+                } catch (InvalidSPDXAnalysisException e) {
+                    fail("Exception: "+e.getMessage());
+                }
+            });
+        }
+          
+
 		// Snippets
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+          elementStream.forEach(element -> {
+                try {
+                    assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
+                } catch (InvalidSPDXAnalysisException e) {
+                    fail("Exception: "+e.getMessage());
+                }
+            });
+        }
 	}
 	
-	public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
+	@SuppressWarnings("unchecked")
+    public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME_XLS)) {
@@ -517,29 +537,37 @@ public class SpreadsheetStoreTest extends TestCase {
 		assertDocFields(doc, "SPDX-2.2");
 
 		// Packages
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+		try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+		    elementStream.forEach(element -> {
+	            try {
+	                assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+	            } catch (InvalidSPDXAnalysisException e) {
+	                fail("Exception: "+e.getMessage());
+	            }
+	        });
+		}
+		
 		// Files
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+            elementStream.forEach(element -> {
+                try {
+                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
+                } catch (InvalidSPDXAnalysisException e) {
+                    fail("Exception: "+e.getMessage());
+                }
+            });
+        }
+		
 		// Snippets
-		SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class).forEach(element -> {
-			try {
-				assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
-			} catch (InvalidSPDXAnalysisException e) {
-				fail("Exception: "+e.getMessage());
-			}
-		});
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+            elementStream.forEach(element -> {
+                try {
+                    assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
+                } catch (InvalidSPDXAnalysisException e) {
+                    fail("Exception: "+e.getMessage());
+                }
+            });
+        }
 	}
 	
 	public void testDeSerializeV2() throws InvalidSPDXAnalysisException, IOException {
