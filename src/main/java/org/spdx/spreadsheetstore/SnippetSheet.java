@@ -220,8 +220,9 @@ public class SnippetSheet extends AbstractSheet {
 			row.createCell(ID_COL).setCellValue(snippet.getId());
 		}
 		try {
-			if (snippet.getName().isPresent()) {
-				row.createCell(NAME_COL).setCellValue(snippet.getName().get());
+		    Optional<String> name = snippet.getName();
+			if (name.isPresent()) {
+				row.createCell(NAME_COL).setCellValue(name.get());
 			}
 			try {
 				SpdxFile snippetFromFile = snippet.getSnippetFromFile();
@@ -265,14 +266,16 @@ public class SnippetSheet extends AbstractSheet {
 			if (licenseInfoFromSnippet != null && licenseInfoFromSnippet.size() > 0) {
 				row.createCell(LICENSE_INFO_IN_SNIPPET_COL).setCellValue(PackageInfoSheet.licensesToString(licenseInfoFromSnippet));
 			}
-			if (snippet.getLicenseComments().isPresent()) {
-				row.createCell(LICENSE_COMMENT_COL).setCellValue(snippet.getLicenseComments().get());
+			Optional<String> licenseComments = snippet.getLicenseComments();
+			if (licenseComments.isPresent()) {
+				row.createCell(LICENSE_COMMENT_COL).setCellValue(licenseComments.get());
 			}
 			if (snippet.getCopyrightText() != null) {
 				row.createCell(COPYRIGHT_COL).setCellValue(snippet.getCopyrightText());
 			}
-			if (snippet.getComment().isPresent()) {
-				row.createCell(COMMENT_COL).setCellValue(snippet.getComment().get());
+			Optional<String> comment = snippet.getComment();
+			if (comment.isPresent()) {
+				row.createCell(COMMENT_COL).setCellValue(comment.get());
 			}
 			this.snippetCache.put(snippet.getId(), snippet);
 		} catch (InvalidSPDXAnalysisException e) {

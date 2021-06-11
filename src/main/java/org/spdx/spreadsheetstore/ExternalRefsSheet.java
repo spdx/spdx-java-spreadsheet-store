@@ -22,6 +22,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -185,8 +186,9 @@ public class ExternalRefsSheet extends AbstractSheet {
 				if (externalRef.getReferenceLocator() != null) {
 					row.createCell(REF_LOCATOR_COL).setCellValue(externalRef.getReferenceLocator());
 				}
-				if (externalRef.getComment().isPresent()) {
-					row.createCell(COMMENT_COL).setCellValue(externalRef.getComment().get());
+				Optional<String> comment = externalRef.getComment();
+				if (comment.isPresent()) {
+					row.createCell(COMMENT_COL).setCellValue(comment.get());
 				}
 			}
 		} catch(InvalidSPDXAnalysisException ex) {

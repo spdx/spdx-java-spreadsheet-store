@@ -75,7 +75,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
-	private static final ThreadLocal<DateFormat> format = new ThreadLocal<DateFormat>(){
+	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>(){
 	    @Override
 	    protected DateFormat initialValue() {
 	        return new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
@@ -392,7 +392,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 */
 	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document, String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		Date createdDate = documentInfoSheet.getCreated();
-		String created  = format.get().format(createdDate);
+		String created  = FORMAT.get().format(createdDate);
 		List<String> createdBys = documentInfoSheet.getCreatedBy();
 		SpdxCreatorInformation creationInfo = document.createCreationInfo(createdBys, created); 
 		String creatorComment = documentInfoSheet.getAuthorComments();
@@ -562,6 +562,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			annotation = annotationsSheet.getAnnotation(i);
 			id = annotationsSheet.getElmementId(i);
 		}
-		
+	}
+	
+	public void unload() {
+	    FORMAT.remove();
 	}
 }
