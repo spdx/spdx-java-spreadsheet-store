@@ -31,6 +31,9 @@
   </licenses>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.organization>spdx</sonar.organization>
+    <sonar.projectKey>spdx-spreadsheet-store</sonar.projectKey>
   </properties>
   <developers>
 	<developer>
