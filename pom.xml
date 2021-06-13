@@ -50,9 +50,9 @@
   </organization>
   <distributionManagement>
      <repository>
-       <id>bintray-spdx-spdx-tools</id>
-       <name>spdx-spdx-tools</name>
-       <url>https://api.bintray.com/maven/spdx/spdx-tools/java-spdx-spreadsheet-store/;publish=1</url>
+        <id>ossrh</id>
+        <name>spdx-spdx-tools</name>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
      </repository>
   </distributionManagement>
   <profiles>
