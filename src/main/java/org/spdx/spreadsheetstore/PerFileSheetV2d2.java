@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -143,8 +144,9 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			throw new SpreadsheetException("Error getting concluded license from file ID "+fileInfo.getId(),e);
 		}
 		try {
-			if (fileInfo.getName().isPresent()) {
-				row.createCell(FILE_NAME_COL).setCellValue(fileInfo.getName().get());
+		    Optional<String> name = fileInfo.getName();
+			if (name.isPresent()) {
+				row.createCell(FILE_NAME_COL).setCellValue(name.get());
 			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting file name from file ID "+fileInfo.getId(),e);
@@ -163,8 +165,9 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			throw new SpreadsheetException("Error getting file types from file ID "+fileInfo.getId(),e);
 		}
 		try {
-			if (fileInfo.getLicenseComments().isPresent() && !fileInfo.getLicenseComments().get().isEmpty()) {
-				row.createCell(LIC_COMMENTS_COL).setCellValue(fileInfo.getLicenseComments().get());
+		    Optional<String> licenseComments = fileInfo.getLicenseComments();
+			if (licenseComments.isPresent() && !licenseComments.get().isEmpty()) {
+				row.createCell(LIC_COMMENTS_COL).setCellValue(licenseComments.get());
 			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting license comment from file ID "+fileInfo.getId(),e);
@@ -184,8 +187,9 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			throw new SpreadsheetException("Error getting license info from files from file ID "+fileInfo.getId(),e);
 		}
 		try {
-			if (fileInfo.getComment().isPresent() && !fileInfo.getComment().get().isEmpty()) {
-				row.createCell(COMMENT_COL).setCellValue(fileInfo.getComment().get());
+		    Optional<String> comment = fileInfo.getComment();
+			if (comment.isPresent() && !comment.get().isEmpty()) {
+				row.createCell(COMMENT_COL).setCellValue(comment.get());
 			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting comment file ID "+fileInfo.getId(),e);
@@ -202,8 +206,9 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 		}
 		// Note: this version of the model does not support package dependencies
 		try {
-			if (fileInfo.getNoticeText().isPresent() && !fileInfo.getNoticeText().get().isEmpty()) {
-				row.createCell(NOTICE_TEXT_COL).setCellValue(fileInfo.getNoticeText().get());
+		    Optional<String> noticeText = fileInfo.getNoticeText();
+			if (noticeText.isPresent() && !noticeText.get().isEmpty()) {
+				row.createCell(NOTICE_TEXT_COL).setCellValue(noticeText.get());
 			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting file notice text from file ID "+fileInfo.getId(),e);

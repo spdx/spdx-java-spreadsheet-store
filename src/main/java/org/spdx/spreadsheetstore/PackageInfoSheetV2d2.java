@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -238,8 +239,9 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 	public void add(SpdxPackage pkgInfo) throws InvalidSPDXAnalysisException {
 		Row row = addRow();
 		Cell nameCell = row.createCell(NAME_COL);
-		if (pkgInfo.getName().isPresent()) {
-			nameCell.setCellValue(pkgInfo.getName().get());
+		Optional<String> name = pkgInfo.getName();
+		if (name.isPresent()) {
+			nameCell.setCellValue(name.get());
 		}
 		Cell idCell = row.createCell(ID_COL);
 		idCell.setCellValue(pkgInfo.getId());
@@ -250,11 +252,12 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		Cell concludedLicenseCol = row.createCell(CONCLUDED_LICENSE_COL);
 		concludedLicenseCol.setCellValue(pkgInfo.getLicenseConcluded().toString());
 		Cell fileChecksumCell = row.createCell(FILE_VERIFICATION_VALUE_COL);
-		if (pkgInfo.getPackageVerificationCode().isPresent()) {
-			fileChecksumCell.setCellValue(pkgInfo.getPackageVerificationCode().get().getValue());
+		Optional<SpdxPackageVerificationCode> verificationCode = pkgInfo.getPackageVerificationCode();
+		if (verificationCode.isPresent()) {
+			fileChecksumCell.setCellValue(verificationCode.get().getValue());
 			Cell verificationExcludedFilesCell = row.createCell(VERIFICATION_EXCLUDED_FILES_COL);
 			StringBuilder excFilesStr = new StringBuilder();
-			Collection<String> excludedFileCollection = pkgInfo.getPackageVerificationCode().get().getExcludedFileNames();
+			Collection<String> excludedFileCollection = verificationCode.get().getExcludedFileNames();
 			if (excludedFileCollection.size() > 0) {
 				String[] excludedFiles = excludedFileCollection.toArray(new String[excludedFileCollection.size()]);
 				excFilesStr.append(excludedFiles[0]);
@@ -266,13 +269,15 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			verificationExcludedFilesCell.setCellValue(excFilesStr.toString());
 		}
 
-		if (pkgInfo.getDescription().isPresent()) {
+		Optional<String> description = pkgInfo.getDescription();
+		if (description.isPresent()) {
 			Cell descCell = row.createCell(FULL_DESC_COL);
-			descCell.setCellValue(pkgInfo.getDescription().get());
+			descCell.setCellValue(description.get());
 		}
 		Cell fileNameCell = row.createCell(MACHINE_NAME_COL);
-		if (pkgInfo.getPackageFileName().isPresent()) {
-			fileNameCell.setCellValue(pkgInfo.getPackageFileName().get());
+		Optional<String> packageFileName = pkgInfo.getPackageFileName();
+		if (packageFileName.isPresent()) {
+			fileNameCell.setCellValue(packageFileName.get());
 		}
 		Cell checksumsCell = row.createCell(PACKAGE_CHECKSUMS_COL);
 		Collection<Checksum> checksums = pkgInfo.getChecksums();
@@ -288,34 +293,44 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			}
 			row.createCell(LICENSE_INFO_IN_FILES_COL).setCellValue(sb.toString());
 		}
-		if (pkgInfo.getLicenseComments().isPresent()) {
-			row.createCell(LICENSE_COMMENT_COL).setCellValue(pkgInfo.getLicenseComments().get());
+		Optional<String> licenseComments = pkgInfo.getLicenseComments();
+		if (licenseComments.isPresent()) {
+			row.createCell(LICENSE_COMMENT_COL).setCellValue(licenseComments.get());
 		}
-		if (pkgInfo.getSummary().isPresent()) {
+		Optional<String> summary = pkgInfo.getSummary();
+		if (summary.isPresent()) {
 			Cell shortDescCell = row.createCell(SHORT_DESC_COL);
-			shortDescCell.setCellValue(pkgInfo.getSummary().get());
+			shortDescCell.setCellValue(summary.get());
 		}
-		if (pkgInfo.getSourceInfo().isPresent()) {
+		Optional<String> sourceInfo = pkgInfo.getSourceInfo();
+		if (sourceInfo.isPresent()) {
 			Cell sourceInfoCell = row.createCell(SOURCE_INFO_COL);
-			sourceInfoCell.setCellValue(pkgInfo.getSourceInfo().get());
+			sourceInfoCell.setCellValue(sourceInfo.get());
 		}
 		Cell urlCell = row.createCell(DOWNLOAD_URL_COL);
-		urlCell.setCellValue(pkgInfo.getDownloadLocation().get());
-		if (pkgInfo.getVersionInfo().isPresent()) {
+		Optional<String> downloadLocation = pkgInfo.getDownloadLocation();
+		if (downloadLocation.isPresent()) {
+		    urlCell.setCellValue(downloadLocation.get());
+		}
+		Optional<String> version = pkgInfo.getVersionInfo();
+		if (version.isPresent()) {
 			Cell versionInfoCell = row.createCell(VERSION_COL);
-			versionInfoCell.setCellValue(pkgInfo.getVersionInfo().get());
+			versionInfoCell.setCellValue(version.get());
 		}
-		if (pkgInfo.getOriginator().isPresent()) {
+		Optional<String> originator = pkgInfo.getOriginator();
+		if (originator.isPresent()) {
 			Cell originatorCell = row.createCell(ORIGINATOR_COL);
-			originatorCell.setCellValue(pkgInfo.getOriginator().get());
+			originatorCell.setCellValue(originator.get());
 		}
-		if (pkgInfo.getSupplier().isPresent()) {
+		Optional<String> supplier = pkgInfo.getSupplier();
+		if (supplier.isPresent()) {
 			Cell supplierCell = row.createCell(SUPPLIER_COL);
-			supplierCell.setCellValue(pkgInfo.getSupplier().get());
+			supplierCell.setCellValue(supplier.get());
 		}
-		if (pkgInfo.getHomepage().isPresent()) {
+		Optional<String> homePage = pkgInfo.getHomepage();
+		if (homePage.isPresent()) {
 			Cell homePageCell = row.createCell(HOME_PAGE_COL);
-			homePageCell.setCellValue(pkgInfo.getHomepage().get());
+			homePageCell.setCellValue(homePage.get());
 		}
 		if (pkgInfo.getAttributionText() != null) {
 			Cell attributionTextCell = row.createCell(ATTRIBUTION_COL);
@@ -327,8 +342,9 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		} else {
 			filesAnalyzedCell.setCellValue("false");
 		}
-		if (pkgInfo.getComment().isPresent()) {
-			row.createCell(COMMENT_COL).setCellValue(pkgInfo.getComment().get());
+		Optional<String> comment = pkgInfo.getComment();
+		if (comment.isPresent()) {
+			row.createCell(COMMENT_COL).setCellValue(comment.get());
 		}
 	}
 

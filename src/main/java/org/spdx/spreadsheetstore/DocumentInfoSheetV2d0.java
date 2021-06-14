@@ -408,8 +408,9 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		}
 		setSpdxId(doc.getId());
 		try {
-			if (doc.getName().isPresent()) {
-				setDocumentName(doc.getName().get());
+		    Optional<String> name = doc.getName();
+			if (name.isPresent()) {
+				setDocumentName(name.get());
 			} else {
 				setDocumentName("");
 			}
@@ -657,10 +658,19 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		if (externalDocumentRef == null) {
 			return "";
 		}
+		Optional<Checksum> checksum = externalDocumentRef.getChecksum();
+		String algorithm;
+		String value;
+		if (checksum.isPresent()) {
+		    algorithm = checksum.get().getAlgorithm().toString();
+		    value = checksum.get().getValue();
+		} else {
+		    algorithm = "[UNKNOWN]";
+		    value = "[UNDEFINED]";
+		}
 		return externalDocumentRef.getId() +
 				" " + externalDocumentRef.getSpdxDocumentNamespace() + 
-				" " + externalDocumentRef.getChecksum().get().getAlgorithm().toString() + ":" +
-				" " + externalDocumentRef.getChecksum().get().getValue();
+				" " + algorithm + ":" + " " + value;
 	}
 
 }

@@ -57,7 +57,7 @@ public class AnnotationsSheet extends AbstractSheet {
 
 	static final boolean[] REQUIRED = new boolean[] {true, true, true, true, true, false};
 	
-	static final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
+	final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
 
 
 	/**

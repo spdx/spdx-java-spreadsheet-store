@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +75,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
-	private static final ThreadLocal<DateFormat> format = new ThreadLocal<DateFormat>(){
+	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>(){
 	    @Override
 	    protected DateFormat initialValue() {
 	        return new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
@@ -166,10 +167,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private void copySnippetInfoToSS(String documentUri, ModelCopyManager copyManager, SnippetSheet snippetSheet,
 			Map<String, Collection<Relationship>> allRelationships,
 			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
-		@SuppressWarnings("unchecked")
-		List<SpdxSnippet> snippets = (List<SpdxSnippet>)SpdxModelFactory.getElements(
-				this, documentUri, copyManager, SpdxSnippet.class)
-				.collect(Collectors.toList());
+	    List<SpdxSnippet> snippets;
+	    try(
+		  @SuppressWarnings("unchecked")
+		  Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getElements(
+	                this, documentUri, copyManager, SpdxSnippet.class)) {
+		    snippets = snippetStream.collect(Collectors.toList());
+		}
 		Collections.sort(snippets);
 		for (SpdxSnippet snippet:snippets) {
 			snippetSheet.add(snippet);
@@ -197,10 +201,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private void copyPerFileInfoToSS(String documentUri, ModelCopyManager copyManager, PerFileSheet perFileSheet,
 			Map<String, String> fileIdToPackageId, Map<String, Collection<Relationship>> allRelationships,
 			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
-		@SuppressWarnings("unchecked")
-		List<SpdxFile> files = (List<SpdxFile>)SpdxModelFactory.getElements(
-				this, documentUri, copyManager, SpdxFile.class)
-				.collect(Collectors.toList());
+	    List<SpdxFile> files;
+	    try(
+		    @SuppressWarnings("unchecked")
+		    Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(
+	                this, documentUri, copyManager, SpdxFile.class)) {
+		    files = fileStream.collect(Collectors.toList());
+		}
 		Collections.sort(files);
 		for (SpdxFile file:files) {
 			perFileSheet.add(file, fileIdToPackageId.get(file.getId()));
@@ -288,10 +295,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private Map<String, String> copyPackageInfoToSS(String documentUri, PackageInfoSheet packageInfoSheet,
 			ModelCopyManager copyManager, Map<String, Collection<ExternalRef>> externalRefs, Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
 		Map<String, String> fileIdToPkgId = new HashMap<>();
-		@SuppressWarnings("unchecked")
-		List<SpdxPackage> packages = (List<SpdxPackage>)SpdxModelFactory.getElements(
-				this, documentUri, copyManager, SpdxPackage.class)
-				.collect(Collectors.toList());
+		List<SpdxPackage> packages;
+		
+		try (@SuppressWarnings("unchecked")
+		Stream<SpdxPackage> packageStream = (Stream<SpdxPackage>)SpdxModelFactory.getElements(
+                this, documentUri, copyManager, SpdxPackage.class)) {
+		    packages = packageStream.collect(Collectors.toList());
+		}
 		Collections.sort(packages);
 		for (SpdxPackage pkg:packages) {
 			String pkgId = pkg.getId();
@@ -382,7 +392,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 */
 	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document, String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		Date createdDate = documentInfoSheet.getCreated();
-		String created  = format.get().format(createdDate);
+		String created  = FORMAT.get().format(createdDate);
 		List<String> createdBys = documentInfoSheet.getCreatedBy();
 		SpdxCreatorInformation creationInfo = document.createCreationInfo(createdBys, created); 
 		String creatorComment = documentInfoSheet.getAuthorComments();
@@ -552,6 +562,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			annotation = annotationsSheet.getAnnotation(i);
 			id = annotationsSheet.getElmementId(i);
 		}
-		
+	}
+	
+	public void unload() {
+	    FORMAT.remove();
 	}
 }

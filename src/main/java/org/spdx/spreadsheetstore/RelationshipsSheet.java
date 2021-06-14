@@ -161,13 +161,15 @@ public class RelationshipsSheet extends AbstractSheet {
 				Cell relationshipCell = row.createCell(RELATIONSHIP_COL, CellType.STRING);
 				relationshipCell.setCellValue(relationship.getRelationshipType().toString());
 			}
-			if (relationship.getRelatedSpdxElement().isPresent()) {
+			Optional<SpdxElement> relatedElement = relationship.getRelatedSpdxElement();
+			if (relatedElement.isPresent()) {
 				Cell relatedIdCell = row.createCell(RELATED_ID_COL, CellType.STRING);
-				relatedIdCell.setCellValue(relationship.getRelatedSpdxElement().get().getId());
+				relatedIdCell.setCellValue(relatedElement.get().getId());
 			}		
-			if (relationship.getComment() .isPresent()) {
+			Optional<String> comment = relationship.getComment();
+			if (comment.isPresent()) {
 				Cell commentCell = row.createCell(COMMENT_COL, CellType.STRING);
-				commentCell.setCellValue(relationship.getComment().get());
+				commentCell.setCellValue(comment.get());
 			}
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting relationship fields",e);
