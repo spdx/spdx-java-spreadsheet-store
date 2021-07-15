@@ -66,6 +66,7 @@ import com.opencsv.CSVWriter;
  */
 public abstract class AbstractSheet {
 	
+    static final int MAX_CHARACTERS_PER_CELL = 32767;
 	static final char CSV_SEPARATOR_CHAR = ',';
 	static final char CSV_QUOTING_CHAR = '"';
 	static final char CSV_ESCAPE_CHAR = '\\';

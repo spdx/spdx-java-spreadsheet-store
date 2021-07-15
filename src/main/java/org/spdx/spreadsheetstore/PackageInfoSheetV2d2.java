@@ -246,7 +246,11 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		Cell idCell = row.createCell(ID_COL);
 		idCell.setCellValue(pkgInfo.getId());
 		Cell copyrightCell = row.createCell(DECLARED_COPYRIGHT_COL);
-		copyrightCell.setCellValue(pkgInfo.getCopyrightText());
+		String copyrightText = pkgInfo.getCopyrightText();
+		if (copyrightText.length() > MAX_CHARACTERS_PER_CELL) {
+		    copyrightText = copyrightText.substring(0, MAX_CHARACTERS_PER_CELL - 20) + "... [MORE] ...";
+		}
+		copyrightCell.setCellValue(copyrightText);
 		Cell DeclaredLicenseCol = row.createCell(DECLARED_LICENSE_COL);
 		DeclaredLicenseCol.setCellValue(pkgInfo.getLicenseDeclared().toString());
 		Cell concludedLicenseCol = row.createCell(CONCLUDED_LICENSE_COL);
