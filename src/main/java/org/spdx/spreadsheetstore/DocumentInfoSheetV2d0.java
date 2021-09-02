@@ -126,7 +126,9 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 			int rowNum = firstRowNum + 1;
 			while (!done) {
 				Row row = sheet.getRow(rowNum);
-				if (row == null || row.getCell(SPDX_VERSION_COL) == null) {
+				if (row == null || row.getCell(SPDX_VERSION_COL) == null ||
+				        row.getCell(SPDX_VERSION_COL).getCellType() == CellType.BLANK ||
+				        (row.getCell(SPDX_VERSION_COL).getCellType() == CellType.STRING && row.getCell(SPDX_VERSION_COL).getStringCellValue().trim().isEmpty())) {
 					done = true;
 				} else {
 					String error = validateRow(row);

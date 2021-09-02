@@ -129,8 +129,10 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			int rowNum = firstRowNum + 1;
 			while (!done) {
 				Row row = sheet.getRow(rowNum);
-				if (row == null || row.getCell(firstCellNum) == null) {
-					done = true;
+                if (row == null || row.getCell(firstCellNum) == null || 
+                        row.getCell(firstCellNum).getCellType() == CellType.BLANK ||
+                        (row.getCell(firstCellNum).getCellType() == CellType.STRING && row.getCell(firstCellNum).getStringCellValue().trim().isEmpty())) {
+                    done = true;
 				} else {
 					String error = validateRow(row);
 					if (error != null) {
