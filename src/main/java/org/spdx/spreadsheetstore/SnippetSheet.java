@@ -345,7 +345,7 @@ public class SnippetSheet extends AbstractSheet {
 			try {
 				id = modelStore.getNextId(IdType.Anonymous, documentUri);
 			} catch (InvalidSPDXAnalysisException e) {
-				throw new SpreadsheetException("Error getting anonomous ID");
+				throw new SpreadsheetException("Error getting anonymous ID");
 			}
 			row.getCell(ID_COL).setCellValue(id);
 		}
