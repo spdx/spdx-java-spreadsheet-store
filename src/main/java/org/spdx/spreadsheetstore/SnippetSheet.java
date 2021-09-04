@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -127,8 +128,10 @@ public class SnippetSheet extends AbstractSheet {
 			int rowNum = getFirstDataRow();
 			while (!done) {
 				Row row = sheet.getRow(rowNum);
-				if (row == null || row.getCell(firstCellNum) == null) {
-					done = true;
+                if (row == null || row.getCell(firstCellNum) == null || 
+                        row.getCell(firstCellNum).getCellType() == CellType.BLANK ||
+                        (row.getCell(firstCellNum).getCellType() == CellType.STRING && row.getCell(firstCellNum).getStringCellValue().trim().isEmpty())) {
+                    done = true;
 				} else {
 					String error = validateRow(row);
 					if (error != null) {
@@ -345,7 +348,7 @@ public class SnippetSheet extends AbstractSheet {
 			try {
 				id = modelStore.getNextId(IdType.Anonymous, documentUri);
 			} catch (InvalidSPDXAnalysisException e) {
-				throw new SpreadsheetException("Error getting anonomous ID");
+				throw new SpreadsheetException("Error getting anonymous ID");
 			}
 			row.getCell(ID_COL).setCellValue(id);
 		}

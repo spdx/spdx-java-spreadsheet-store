@@ -182,7 +182,8 @@ public abstract class AbstractSheet {
 				Row row = sheet.getRow(lastRowNum);
 				if (row == null || row.getCell(firstCellNum) == null || 
 						row.getCell(firstCellNum).getStringCellValue() == null || 
-						row.getCell(firstCellNum).getStringCellValue().isEmpty()) {
+						row.getCell(firstCellNum).getCellType() == CellType.BLANK ||
+						row.getCell(firstCellNum).getStringCellValue().trim().isEmpty()) {
 					lastRowNum--;
 					done = true;
 				} else {
