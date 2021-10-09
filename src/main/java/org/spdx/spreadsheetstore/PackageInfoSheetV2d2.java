@@ -42,6 +42,7 @@ import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.model.license.SpdxNoneLicense;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
+import org.spdx.storage.simple.InMemSpdxStore;
 
 /**
  * Version 2.1 of the package info sheet
@@ -108,6 +109,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 	 */
 	@Override
 	public String verify() {
+	    IModelStore verifyModelStore = new InMemSpdxStore();   // we want to use a temporary store to not leave behind unused objects
 		try {
 			if (sheet == null) {
 				return "Worksheet for SPDX Package Info does not exist";
@@ -134,7 +136,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
                         (row.getCell(firstCellNum).getCellType() == CellType.STRING && row.getCell(firstCellNum).getStringCellValue().trim().isEmpty())) {
                     done = true;
 				} else {
-					String error = validateRow(row);
+					String error = validateRow(row, verifyModelStore);
 					if (error != null) {
 						return error;
 					}
@@ -144,10 +146,16 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			return null;
 		} catch (Exception ex) {
 			return "Unexpected error in verifying SPDX Package Info work sheet: "+ex.getMessage();
+		} finally {
+		    try {
+                verifyModelStore.close();
+            } catch (Exception e) {
+                // ignore - this is just a temporary store
+            }
 		}
 	}
 
-	private String validateRow(Row row) {
+	private String validateRow(Row row, IModelStore verifyModelStore) {
 		for (int i = 0; i < NUM_COLS; i++) {
 			Cell cell = row.getCell(i);
 			if (cell == null || cell.getCellType() == CellType.BLANK ||
@@ -158,7 +166,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			} else {
 				if (i == DECLARED_LICENSE_COL || i == CONCLUDED_LICENSE_COL) {
 					try {
-						LicenseInfoFactory.parseSPDXLicenseString(cell.getStringCellValue(), modelStore, documentUri, copyManager);
+						LicenseInfoFactory.parseSPDXLicenseString(cell.getStringCellValue(), verifyModelStore, documentUri, null);
 					} catch(InvalidSPDXAnalysisException ex) {
 						if (i == DECLARED_LICENSE_COL) {
 							return "Invalid declared license in row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
@@ -173,7 +181,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 					}
 					for (int j = 0; j < licenses.length; j++) {
 						try {
-							LicenseInfoFactory.parseSPDXLicenseString(licenses[j], modelStore, documentUri, copyManager);
+							LicenseInfoFactory.parseSPDXLicenseString(licenses[j], verifyModelStore, documentUri, null);
 						} catch(InvalidSPDXAnalysisException ex) {
 							return "Invalid license information in in files for license "+licenses[j]+ " row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
 						}
@@ -379,7 +387,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 		if (nameCell == null || nameCell.getStringCellValue().isEmpty()) {
 			return null;
 		}
-		String error = validateRow(row);
+		String error = validateRow(row, new InMemSpdxStore());
 		if (error != null && !error.isEmpty()) {
 			throw(new SpreadsheetException(error));
 		}

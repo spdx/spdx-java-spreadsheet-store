@@ -343,7 +343,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			}
 			this.clear(ss.getDocumentUri());
 		}
-		SpdxDocument document = SpdxModelFactory.createSpdxDocument(this, ss.getDocumentUri(), copyManager);
+		SpdxDocument document = new SpdxDocument(this, ss.getDocumentUri(), copyManager, true);
 		copyDocumentInfoFromSS(ss.getOriginsSheet(), document, ss.getDocumentUri(), copyManager);
 		ss.getReviewersSheet().addReviewsToDocAnnotations();
 		copyExtractedLicenseInfosFromSS(ss.getExtractedLicenseInfoSheet(), document, ss.getDocumentUri(), copyManager);
