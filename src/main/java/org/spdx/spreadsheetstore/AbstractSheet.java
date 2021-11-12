@@ -58,6 +58,7 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+import com.opencsv.exceptions.CsvValidationException;
 
 /**
  * Abstract class representing a workbook sheet used in storing structured data
@@ -444,7 +445,9 @@ public abstract class AbstractSheet {
 		try {
 			return Arrays.asList(csvReader.readNext());
 		} catch (IOException e) {
-			return Arrays.asList(new String[] {"ERROR PARSING CSV String"});
+			return Arrays.asList(new String[] {"I/O ERROR PARSING CSV String"});
+		} catch (CsvValidationException e) {
+			return Arrays.asList(new String[] {"CSV VALIDATION ERROR PARSING CSV String"});
 		} finally {
 			try {
 				csvReader.close();
