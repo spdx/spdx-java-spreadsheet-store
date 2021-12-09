@@ -363,8 +363,6 @@ public class SpreadsheetStoreTest extends TestCase {
 				RelationshipType.GENERATED_FROM, null));
 		spdxrefJenalib.addRelationship(compareDocument.createRelationship(spdxrefPackage, 
 				RelationshipType.CONTAINS, null));
-		spdxrefPackage.addRelationship(compareDocument.createRelationship(spdxrefJenalib, 
-				RelationshipType.CONTAINS, null));
 		spdxrefPackage.addRelationship(compareDocument.createRelationship(spdxrefSaxon, 
 				RelationshipType.DYNAMIC_LINK, null));
 		
@@ -412,7 +410,9 @@ public class SpreadsheetStoreTest extends TestCase {
 				throw new RuntimeException(e);
 			}
 		});
-		
+		SpdxDocument sstDoc = new SpdxDocument(sst, documentUri, copyManager, false);
+		SpdxComparer comparer = new SpdxComparer();
+		comparer.compare(compareDocument, sstDoc);
 		Path tempFilePath = Files.createTempFile("temp", ".xlsx");
 		try {
 			try (FileOutputStream out = new FileOutputStream(tempFilePath.toFile())) {
@@ -428,7 +428,7 @@ public class SpreadsheetStoreTest extends TestCase {
 			SpdxDocument doc = new SpdxDocument(resultStore, resultDocUri, cm, false);
 			// Document fields and extracted license infos
 			assertDocFields(doc, "SPDX-2.2");
-			SpdxComparer comparer = new SpdxComparer();
+			comparer = new SpdxComparer();
 			comparer.compare(compareDocument, doc);
 			assertFalse(comparer.isDifferenceFound());
 			// Files

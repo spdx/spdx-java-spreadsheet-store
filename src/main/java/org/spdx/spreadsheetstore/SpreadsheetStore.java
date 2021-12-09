@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,6 +55,7 @@ import org.spdx.library.model.SpdxFile;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxSnippet;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.ExtractedLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.model.license.SpdxListedLicense;
@@ -115,7 +117,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		copySnippetInfoToSS(documentUri, copyManager, ss.getSnippetSheet(), allRelationships, allAnnotations);		
 		allRelationships.put(doc.getId(), doc.getRelationships());
 		allAnnotations.put(doc.getId(), doc.getAnnotations());
-		copyRelationshipsToSS(allRelationships, ss.getRelationshipsSheet());
+		copyRelationshipsToSS(allRelationships, ss.getRelationshipsSheet(), fileIdToPackageId);
 		copyAnnotationsToSS(allAnnotations, ss.getAnnotationsSheet());
 		ss.resizeRow();
 		ss.write(stream);
@@ -142,15 +144,26 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * Copy relationships to the relationshipsSheet
 	 * @param allRelationships
 	 * @param relationshipsSheet
+	 * @param fileIdToPackageId
 	 * @throws SpreadsheetException 
 	 */
 	private void copyRelationshipsToSS(Map<String, Collection<Relationship>> allRelationships,
-			RelationshipsSheet relationshipsSheet) throws SpreadsheetException {
+			RelationshipsSheet relationshipsSheet, Map<String, String> fileIdToPackageId) throws SpreadsheetException {
 		for (Entry<String, Collection<Relationship>> entry:allRelationships.entrySet()) {
 			Relationship[] relationships = entry.getValue().toArray(new Relationship[entry.getValue().size()]);
 			Arrays.sort(relationships);
 			for (Relationship relationship:relationships) {
-				relationshipsSheet.add(relationship, entry.getKey());
+				try {
+					if (!(RelationshipType.CONTAINS.equals(relationship.getRelationshipType()) &&
+							relationship.getRelatedSpdxElement().isPresent() &&
+							fileIdToPackageId.containsKey(relationship.getRelatedSpdxElement().get().getId()) &&
+							fileIdToPackageId.get(relationship.getRelatedSpdxElement().get().getId()).contains(entry.getKey()))) {
+						// Don't add hasFile relationships to the sheet - they are added as a package index to the files
+						relationshipsSheet.add(relationship, entry.getKey());
+					}
+				} catch (InvalidSPDXAnalysisException e) {
+					throw new SpreadsheetException("Error getting relationship information",e);
+				}
 			}
 		}
 	}
@@ -311,7 +324,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 				String pkgIdsForFile = fileIdToPkgId.get(fileId);
 				if (pkgIdsForFile == null) {
 					pkgIdsForFile = pkgId;
-				} else {
+				} else if (!pkgIdsForFile.contains(pkgId)) {
 					pkgIdsForFile = pkgIdsForFile + ", " + pkgId;
 				}
 				fileIdToPkgId.put(fileId, pkgIdsForFile);
@@ -351,11 +364,12 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		Map<String, SpdxPackage> pkgIdToPackage = copyPackageInfoFromSS(ss.getPackageInfoSheet(), 
 				ss.getExternalRefsSheet(), document);
 		// note - packages need to be added before the files so that the files can be added to the packages
-		Map<String, SpdxFile> fileIdToFile = copyPerFileInfoFromSS(ss.getPerFileSheet(), document, pkgIdToPackage);
+		Map<String, List<String>> hasFilesAdded = new HashMap<>();
+		Map<String, SpdxFile> fileIdToFile = copyPerFileInfoFromSS(ss.getPerFileSheet(), document, pkgIdToPackage, hasFilesAdded);
 		// note - files need to be added before snippets
 		copyPerSnippetInfoFromSS(ss.getSnippetSheet(), document,  fileIdToFile);
 		copyAnnotationInfoFromSS(ss.getAnnotationsSheet(), document);
-		copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
+		copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document, hasFilesAdded);
 		return ss.getDocumentUri();
 	}
 
@@ -466,12 +480,14 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * @param perFileSheet
 	 * @param analysis
 	 * @param pkgIdToPackage
+	 * @param hasFilesAdded Map of package ID's to list of fileID's that were added to the package files
 	 * @return map of file ID's to SpdxFiles
 	 * @throws SpreadsheetException
 	 * @throws InvalidSPDXAnalysisException
 	 */
 	private Map<String, SpdxFile> copyPerFileInfoFromSS(PerFileSheet perFileSheet,
-			SpdxDocument analysis, Map<String, SpdxPackage> pkgIdToPackage) throws SpreadsheetException, InvalidSPDXAnalysisException {
+			SpdxDocument analysis, Map<String, SpdxPackage> pkgIdToPackage, 
+			Map<String, List<String>> hasFilesAdded) throws SpreadsheetException, InvalidSPDXAnalysisException {
 		int firstRow = perFileSheet.getFirstDataRow();
 		int numFiles = perFileSheet.getNumDataRows();
 		Map<String, SpdxFile> retval = new HashMap<>();
@@ -483,6 +499,12 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 				SpdxPackage pkg = pkgIdToPackage.get(pkgId);
 				if (pkg != null) {
 					pkg.addFile(file);
+					List<String> filesAdded = hasFilesAdded.get(pkg.getId());
+					if (Objects.isNull(filesAdded)) {
+						filesAdded = new ArrayList<>();
+						hasFilesAdded.put(pkgId, filesAdded);
+					}
+					filesAdded.add(file.getId());
 				} else {
 					logger.warn("Can not add file "+file.getName()+" to package "+pkgId);
 				}
@@ -512,11 +534,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * Copy the relationships into the model store
 	 * @param relationshipsSheet
 	 * @param analysis
+	 * @param hasFilesAdded Map of package ID's to list of fileID's that were added to the package files
 	 * @throws SpreadsheetException 
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	private void copyRelationshipInfoFromSS(
-			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
+			RelationshipsSheet relationshipsSheet, SpdxDocument analysis,
+			Map<String, List<String>> hasFilesAdded) throws SpreadsheetException, InvalidSPDXAnalysisException {
 		int i = relationshipsSheet.getFirstDataRow();
 		Relationship relationship = relationshipsSheet.getRelationship(i);
 		String id = relationshipsSheet.getElmementId(i);
@@ -529,7 +553,14 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			if (!(mo.get() instanceof SpdxElement)) {
 				throw new SpreadsheetException("ID for SPDX relationship is not of type SpdxElement: "+id);
 			}
-			((SpdxElement)(mo.get())).addRelationship(relationship);
+			SpdxElement fromElement = (SpdxElement)(mo.get());
+			if (!(RelationshipType.CONTAINS.equals(relationship.getRelationshipType()) &&
+					hasFilesAdded.containsKey(fromElement.getId()) &&
+						relationship.getRelatedSpdxElement().isPresent() &&
+						hasFilesAdded.get(fromElement.getId()).contains(relationship.getRelatedSpdxElement().get().getId()))) {
+				// make sure this relationship wasn't already added by the files property
+				fromElement.addRelationship(relationship);
+			}
 			i = i + 1;
 			relationship = relationshipsSheet.getRelationship(i);
 			id = relationshipsSheet.getElmementId(i);
