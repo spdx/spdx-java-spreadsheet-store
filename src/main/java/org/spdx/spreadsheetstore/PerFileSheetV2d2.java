@@ -76,7 +76,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 	static final int ATTRIBUTION_COL = FILE_DEPENDENCIES_COL + 1;
 	static final int USER_DEFINED_COL = ATTRIBUTION_COL + 1;
 	
-	static final boolean[] REQUIRED = new boolean[] {true, true, false, true, false, false, 
+	static final boolean[] REQUIRED = new boolean[] {true, true, false, false, true, false, 
 		false, false, false, false, false, false, false, false, false, false, false, false};
 	static final String[] HEADER_TITLES = new String[] {"File Name", "SPDX Identifier",
 		"Package Identifier", "File Type(s)",
@@ -516,6 +516,16 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			}
 		}
 		return null;
+	}
+	
+	@Override
+	protected String getFileId(int rowNum) {
+		Cell idCell = sheet.getRow(rowNum).getCell(ID_COL);
+		if (idCell == null || idCell.getStringCellValue().isEmpty()) {
+			return "";
+		} else {
+			return idCell.getStringCellValue();
+		}
 	}
 
 }

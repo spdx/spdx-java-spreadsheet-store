@@ -146,4 +146,10 @@ public abstract class PerFileSheet extends AbstractSheet {
 		return retval;
 	}
 
+	/**
+	 * @param rowNum
+	 * @return file ID for rownum
+	 */
+	protected abstract String getFileId(int rowNum);
+
 }

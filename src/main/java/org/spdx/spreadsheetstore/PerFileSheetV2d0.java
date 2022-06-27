@@ -492,4 +492,14 @@ public class PerFileSheetV2d0 extends PerFileSheet {
 		return null;
 	}
 
+	@Override
+	protected String getFileId(int rowNum) {
+		Cell idCell = sheet.getRow(rowNum).getCell(ID_COL);
+		if (idCell == null || idCell.getStringCellValue().isEmpty()) {
+			return "";
+		} else {
+			return idCell.getStringCellValue();
+		}
+	}
+
 }

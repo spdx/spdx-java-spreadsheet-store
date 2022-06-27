@@ -50,6 +50,7 @@ import org.spdx.library.model.SpdxSnippet;
 import org.spdx.library.model.enumerations.AnnotationType;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.enumerations.ReferenceCategory;
 import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.AnyLicenseInfo;
@@ -71,8 +72,8 @@ import junit.framework.TestCase;
 public class SpreadsheetStoreTest extends TestCase {
 	
 	private static final String SPREADSHEET_2_0_FILENAME = "TestFiles" + File.separator + "SPDXSpreadsheetExample-2.0.xlsx";
-	private static final String SPREADSHEET_2_2_FILENAME = "TestFiles" + File.separator + "SPDXSpreadsheetExample-v2.2.xlsx";
-	private static final String SPREADSHEET_2_2_FILENAME_XLS = "TestFiles" + File.separator + "SPDXSpreadsheetExample-v2.2.xls";
+	private static final String SPREADSHEET_2_3_FILENAME = "TestFiles" + File.separator + "SPDXSpreadsheetExample-v2.3.xlsx";
+	private static final String SPREADSHEET_2_3_FILENAME_XLS = "TestFiles" + File.separator + "SPDXSpreadsheetExample-v2.3.xls";
 
 	private static final String LICENSEREF1_TEXT = "/*\n"+
 			" * (c) Copyright 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 Hewlett-Packard Development Company, LP\n"+
@@ -245,6 +246,7 @@ public class SpreadsheetStoreTest extends TestCase {
 				.addChecksum(compareDocument.createChecksum(ChecksumAlgorithm.MD5, "624c1abb3664f4b35547e7c73864ad24"))
 				.addChecksum(compareDocument.createChecksum(ChecksumAlgorithm.SHA1, "85ed0817af83a24ad8da68c2b5094de69833983c"))
 				.addChecksum(compareDocument.createChecksum(ChecksumAlgorithm.SHA256, "11b6d3ee554eedf79299905a98f9b9a04e498210b59f15094c916c91d150efcd"))
+				.addChecksum(compareDocument.createChecksum(ChecksumAlgorithm.BLAKE2b_256, "ffb6d3ee554eedf79299905a98f9b9a04e498210b59f15094c916c91d150efcd"))
 				.setPackageVerificationCode(compareDocument.createPackageVerificationCode("d6a770ba38583ed4bb4525bd96e50461655d2758", Arrays.asList(new String[] {"./package.spdx"})))
 				.setSourceInfo("uses glibc-2_11-branch from git://sourceware.org/git/glibc.git.")
 				.setLicenseInfosFromFile(Arrays.asList(new AnyLicenseInfo[] {gpl2only, licenseRef1, licenseRef2}))
@@ -261,6 +263,10 @@ public class SpreadsheetStoreTest extends TestCase {
 						locationRefAcmeForge, "acmecorp/acmenator/4.1.3-alpha", "This is the external ref for Acme"))	
 				.addAnnotation(compareDocument.createAnnotation("Person: Package Commenter", 
 						AnnotationType.OTHER, "2011-01-29T18:30:22Z", "Package level annotation"))
+				.setPrimaryPurpose(Purpose.LIBRARY)
+				.setReleaseDate("2012-01-29T18:30:22Z")
+				.setBuiltDate("2012-01-28T17:30:22Z")
+				.setValidUntilDate("2014-01-29T13:30:22Z")
 				.build();	
 		compareDocument.getDocumentDescribes().add(spdxrefPackage);
 		comparePackages.put("SPDXRef-Package", spdxrefPackage);
@@ -313,7 +319,7 @@ public class SpreadsheetStoreTest extends TestCase {
 				.setComment("This file is used by Jena")
 				.addRelationship(compareDocument.createRelationship(new SpdxNoAssertionElement(), RelationshipType.GENERATED_FROM, null))
 				.build();
-		spdxrefPackage.addFile(spdxrefCommonsLang);
+		spdxrefPackage.addRelationship(compareDocument.createRelationship(spdxrefCommonsLang, RelationshipType.CONTAINS, "Same as add file to package"));
 		compareFiles.put("SPDXRef-CommonsLangSrc", spdxrefCommonsLang);
 		SpdxFile spdxrefJenalib = compareDocument.createSpdxFile("SPDXRef-JenaLib", 
 				"./lib-source/jena-2.6.3-sources.jar", licenseRef1, 
@@ -361,9 +367,9 @@ public class SpreadsheetStoreTest extends TestCase {
 				RelationshipType.COPY_OF, null));
 		spdxrefFile.addRelationship(compareDocument.createRelationship(spdxrefDoap, 
 				RelationshipType.GENERATED_FROM, null));
-		spdxrefJenalib.addRelationship(compareDocument.createRelationship(spdxrefPackage, 
-				RelationshipType.CONTAINS, null));
-		spdxrefPackage.addRelationship(compareDocument.createRelationship(spdxrefJenalib, 
+		spdxrefFile.addRelationship(compareDocument.createRelationship(spdxrefDoap, 
+				RelationshipType.SPECIFICATION_FOR, null));
+		spdxrefJenalib.addRelationship(compareDocument.createRelationship(spdxrefFile, 
 				RelationshipType.CONTAINS, null));
 		spdxrefPackage.addRelationship(compareDocument.createRelationship(spdxrefSaxon, 
 				RelationshipType.DYNAMIC_LINK, null));
@@ -427,12 +433,15 @@ public class SpreadsheetStoreTest extends TestCase {
 			ModelCopyManager cm = new ModelCopyManager();
 			SpdxDocument doc = new SpdxDocument(resultStore, resultDocUri, cm, false);
 			// Document fields and extracted license infos
-			assertDocFields(doc, "SPDX-2.2");
+			assertDocFields(doc, "SPDX-2.3");
 			SpdxComparer comparer = new SpdxComparer();
+			SpdxPackage comparePkg = new SpdxPackage(compareDocument.getModelStore(), compareDocument.getDocumentUri(), "SPDXRef-Package", null, false);
+			SpdxPackage resultPkg = new SpdxPackage(resultStore, resultDocUri, "SPDXRef-Package", null, false);
+			assertTrue(resultPkg.equivalent(comparePkg));
 			comparer.compare(compareDocument, doc);
 			assertFalse(comparer.isDifferenceFound());
 			// Files
-			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxFile.class)) {
 			    elementStream.forEach(element -> {
 	                try {
 	                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
@@ -443,10 +452,10 @@ public class SpreadsheetStoreTest extends TestCase {
 			}
 			
 			// Packages
-           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxPackage.class)) {
                 elementStream.forEach(element -> {
                     try {
-                        assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+                     	assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
                     } catch (InvalidSPDXAnalysisException e) {
                         fail("Exception: "+e.getMessage());
                     }
@@ -454,7 +463,7 @@ public class SpreadsheetStoreTest extends TestCase {
             }
 
 			// Snippets
-            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxSnippet.class)) {
                elementStream.forEach(element -> {
                    try {
                        assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
@@ -478,7 +487,7 @@ public class SpreadsheetStoreTest extends TestCase {
     public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
-		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME)) {
+		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_3_FILENAME)) {
 			documentUri = sst.deSerialize(stream, false);
 		}
 		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
@@ -486,18 +495,7 @@ public class SpreadsheetStoreTest extends TestCase {
 		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
 		
 		// Document fields and extracted license infos
-		assertDocFields(doc, "SPDX-2.2");
-
-		// Packages
-		try(Stream<SpdxElement> packageStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
-		    packageStream.forEach(element -> {
-    			try {
-    				assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
-    			} catch (InvalidSPDXAnalysisException e) {
-    				fail("Exception: "+e.getMessage());
-    			}
-    		});
-		}
+		assertDocFields(doc, "SPDX-2.3");
 		// Files
         try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
           elementStream.forEach(element -> {
@@ -520,13 +518,25 @@ public class SpreadsheetStoreTest extends TestCase {
                 }
             });
         }
+		// Packages
+		try(Stream<SpdxElement> packageStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+		    packageStream.forEach(element -> {
+    			try {
+//    				Relationship[] relationships = ((SpdxElement)element).getRelationships().toArray(new Relationship[((SpdxElement)element).getRelationships().size()]);
+//    				Relationship[] compRelationships = comparePackages.get(((SpdxElement)element).getId()).getRelationships().toArray(new Relationship[comparePackages.get(((SpdxElement)element).getId()).getRelationships().size()]);
+    				assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+    			} catch (InvalidSPDXAnalysisException e) {
+    				fail("Exception: "+e.getMessage());
+    			}
+    		});
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
     public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri;
-		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_2_FILENAME_XLS)) {
+		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_3_FILENAME_XLS)) {
 			documentUri = sst.deSerialize(stream, false);
 		}
 		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
@@ -534,7 +544,7 @@ public class SpreadsheetStoreTest extends TestCase {
 		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
 		
 		// Document fields and extracted license infos
-		assertDocFields(doc, "SPDX-2.2");
+		assertDocFields(doc, "SPDX-2.3");
 
 		// Packages
 		try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {

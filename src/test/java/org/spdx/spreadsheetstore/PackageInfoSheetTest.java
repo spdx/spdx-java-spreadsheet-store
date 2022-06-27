@@ -18,19 +18,24 @@
 package org.spdx.spreadsheetstore;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.GregorianCalendar;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
+import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.Checksum;
 import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxPackageVerificationCode;
 import org.spdx.library.model.SpdxPackage.SpdxPackageBuilder;
 import org.spdx.library.model.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.enumerations.Purpose;
 import org.spdx.library.model.license.AnyLicenseInfo;
 import org.spdx.library.model.license.ConjunctiveLicenseSet;
 import org.spdx.library.model.license.DisjunctiveLicenseSet;
@@ -109,7 +114,11 @@ public class PackageInfoSheetTest extends TestCase {
 //		String lic2String = PackageInfoSheet.licensesToString(testLicenses2);
 
 		Checksum sha1 = Checksum.create(modelStore, DOCUMENT_URI, ChecksumAlgorithm.SHA1, "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
+		Checksum blake2b = Checksum.create(modelStore, DOCUMENT_URI, ChecksumAlgorithm.BLAKE2b_384, "aaabd89c926ab525c242e6621f2f5fa73aa4afe3d9e24aed727faaadd6af38b620bdb623dd2b4788b1c8086984af8706");
 
+		String releaseDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2021, Calendar.JANUARY, 11).getTime());
+		String buildDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2020, Calendar.JANUARY, 11).getTime());
+		String validUntilDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2023, Calendar.JANUARY, 11).getTime());
 		SpdxPackage pkgInfo1 = new SpdxPackageBuilder(modelStore, DOCUMENT_URI,  "SPDXRef-Package1", copyManager, 
 				"decname1", testLicense1, "dec-copyright1", testLicense2)
 				.addChecksum(sha1)
@@ -128,6 +137,11 @@ public class PackageInfoSheetTest extends TestCase {
 				.setVersionInfo("Version1")
 				.setFilesAnalyzed(true)
 				.setAttributionText(Arrays.asList(new String[]{"Att1", "att2"}))
+				.setPrimaryPurpose(Purpose.CONTAINER)
+				.setReleaseDate(releaseDate)
+				.setBuiltDate(buildDate)
+				.setValidUntilDate(validUntilDate)
+				.addChecksum(blake2b)
 				.build();
 
 		SpdxPackage pkgInfo2 =  new SpdxPackageBuilder(modelStore, DOCUMENT_URI,  "SPDXRef-Package2", copyManager, 
@@ -160,6 +174,10 @@ public class PackageInfoSheetTest extends TestCase {
 		SpdxPackage tstPkgInfo2 = pkgInfoSheet.getPackages().get(1);
 		assertTrue(pkgInfo1.equivalent(tstPkgInfo1));
 		assertEquals(pkgInfo1.getId(), tstPkgInfo1.getId());
+		assertEquals(Purpose.CONTAINER, tstPkgInfo1.getPrimaryPurpose().get());
+		assertEquals(releaseDate, tstPkgInfo1.getReleaseDate().get());
+		assertEquals(buildDate, tstPkgInfo1.getBuiltDate().get());
+		assertEquals(validUntilDate, tstPkgInfo1.getValidUntilDate().get());
 		assertTrue(pkgInfo2.equivalent(tstPkgInfo2));
 		assertEquals(pkgInfo2.getId(), tstPkgInfo2.getId());
 		assertEquals(2, pkgInfoSheet.getPackages().size());
