@@ -357,7 +357,7 @@ public abstract class AbstractSheet {
 		if (checksum == null) {
 			return "";
 		}
-		StringBuilder sb = new StringBuilder(checksum.getAlgorithm().toString());
+		StringBuilder sb = new StringBuilder(checksum.getAlgorithm().toString().replaceAll("_", "-"));
 		sb.append(": ");
 		sb.append(checksum.getValue());
 		return sb.toString();
@@ -393,7 +393,7 @@ public abstract class AbstractSheet {
 		}
 		ChecksumAlgorithm algorithm;
 		try {
-			algorithm = ChecksumAlgorithm.valueOf(matcher.group(1));
+			algorithm = ChecksumAlgorithm.valueOf(matcher.group(1).replaceAll("-", "_"));
 		} catch (Exception ex) {
 			algorithm = null;
 		}

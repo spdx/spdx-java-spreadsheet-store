@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,6 +55,7 @@ import org.spdx.library.model.SpdxFile;
 import org.spdx.library.model.SpdxModelFactory;
 import org.spdx.library.model.SpdxPackage;
 import org.spdx.library.model.SpdxSnippet;
+import org.spdx.library.model.enumerations.RelationshipType;
 import org.spdx.library.model.license.ExtractedLicenseInfo;
 import org.spdx.library.model.license.LicenseInfoFactory;
 import org.spdx.library.model.license.SpdxListedLicense;
@@ -355,8 +357,47 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		// note - files need to be added before snippets
 		copyPerSnippetInfoFromSS(ss.getSnippetSheet(), document,  fileIdToFile);
 		copyAnnotationInfoFromSS(ss.getAnnotationsSheet(), document);
-		copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
+		Map<String, List<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
+		// Note - the copy missing file contains should be after copying relationships
+		copyAnyMissingFileContains(ss.getPerFileSheet(), pkgIdToPackage, fileIdToFile, packageContainsFileIds);
 		return ss.getDocumentUri();
+	}
+
+	/**
+	 * Add any missing package contains file relationships based on the package ID column in the files
+	 * sheet.  Note that these should already have been added as relationships.
+	 * @param perFileSheet file spreadsheet
+	 * @param pkgIdToPackage map of Package ID to package
+	 * @param fileIdToFile map of file ID to file
+	 * @param packageContainsFileIds map of package ID to list of file IDs that have a contains relationshp
+	 * @throws InvalidSPDXAnalysisException 
+	 */
+	private void copyAnyMissingFileContains(PerFileSheet perFileSheet,
+			Map<String, SpdxPackage> pkgIdToPackage,
+			Map<String, SpdxFile> fileIdToFile,
+			Map<String, List<String>> packageContainsFileIds) throws InvalidSPDXAnalysisException {
+		int firstRow = perFileSheet.getFirstDataRow();
+		int numFiles = perFileSheet.getNumDataRows();
+		for (int i = 0; i < numFiles; i++) {
+			String fileId = perFileSheet.getFileId(firstRow+i);
+			List<String> pkgIds = perFileSheet.getPackageIds(firstRow+i);
+			for (String pkgId:pkgIds) {
+				if (!packageContainsFileIds.containsKey(pkgId) ||
+				!packageContainsFileIds.get(pkgId).contains(fileId)) {
+					SpdxPackage pkg = pkgIdToPackage.get(pkgId);
+					SpdxFile file = fileIdToFile.get(fileId);
+					if (pkg != null && file != null) {
+						if (pkg.getFiles().contains(file)) {
+							logger.debug("Skipping duplicate hasFiles");
+						} else {
+							pkg.addFile(file);
+						}
+					} else {
+						logger.warn("Can not add file "+file.getName()+" to package "+pkgId);
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -478,15 +519,6 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		for (int i = 0; i < numFiles; i++) {
 			SpdxFile file = perFileSheet.getFileInfo(firstRow+i);
 			retval.put(file.getId(), file);
-			List<String> pkgIds = perFileSheet.getPackageIds(firstRow+i);
-			for (String pkgId:pkgIds) {
-				SpdxPackage pkg = pkgIdToPackage.get(pkgId);
-				if (pkg != null) {
-					pkg.addFile(file);
-				} else {
-					logger.warn("Can not add file "+file.getName()+" to package "+pkgId);
-				}
-			}
 		}
 		return retval;
 	}
@@ -512,11 +544,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * Copy the relationships into the model store
 	 * @param relationshipsSheet
 	 * @param analysis
+	 * @return map of package IDs to file IDs which have a contains relationship to the package
 	 * @throws SpreadsheetException 
 	 * @throws InvalidSPDXAnalysisException 
 	 */
-	private void copyRelationshipInfoFromSS(
+	private Map<String, List<String>> copyRelationshipInfoFromSS(
 			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
+		Map<String, List<String>> retval = new HashMap<>();
 		int i = relationshipsSheet.getFirstDataRow();
 		Relationship relationship = relationshipsSheet.getRelationship(i);
 		String id = relationshipsSheet.getElmementId(i);
@@ -529,11 +563,30 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			if (!(mo.get() instanceof SpdxElement)) {
 				throw new SpreadsheetException("ID for SPDX relationship is not of type SpdxElement: "+id);
 			}
-			((SpdxElement)(mo.get())).addRelationship(relationship);
+			if (mo.get() instanceof SpdxPackage && 
+					relationship.getRelationshipType().equals(RelationshipType.CONTAINS) && 
+					relationship.getRelatedSpdxElement().isPresent() && 
+					relationship.getRelatedSpdxElement().get() instanceof SpdxFile) {
+				List<String> fileIds = retval.get(mo.get().getId());
+				if (fileIds == null) {
+					fileIds = new ArrayList<>();
+					retval.put(mo.get().getId(), fileIds);
+				}
+				fileIds.add(relationship.getRelatedSpdxElement().get().getId());
+				// need to check for duplicates since the package hasFiles may already contain this
+				if (((SpdxPackage)(mo.get())).getFiles().contains(relationship.getRelatedSpdxElement().get())) {
+					logger.debug("Skipping duplicate hasFile relationship");
+				} else {
+					((SpdxElement)(mo.get())).addRelationship(relationship);
+				}
+			} else {
+				((SpdxElement)(mo.get())).addRelationship(relationship);
+			}
 			i = i + 1;
 			relationship = relationshipsSheet.getRelationship(i);
 			id = relationshipsSheet.getElmementId(i);
 		}
+		return retval;
 	}
 
 	/**

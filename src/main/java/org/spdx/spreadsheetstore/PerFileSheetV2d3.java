@@ -54,7 +54,7 @@ import org.spdx.storage.IModelStore.IdType;
  * @author Gary O'Neall
  *
  */
-public class PerFileSheetV2d2 extends PerFileSheet {
+public class PerFileSheetV2d3 extends PerFileSheet {
 	
 	static final int NUM_COLS = 18;
 	static final int FILE_NAME_COL = 0;
@@ -96,7 +96,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 	 */
 	Map<String, SpdxFile> fileCache = new HashMap<>();
 	
-	PerFileSheetV2d2(Workbook workbook, String sheetName, String version, IModelStore modelStore, 
+	PerFileSheetV2d3(Workbook workbook, String sheetName, String version, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
 		super(workbook, sheetName, version, modelStore, documentUri, copyManager);
 	}
@@ -274,7 +274,7 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			throw new SpreadsheetException("Missing SHA1 for file "+name);
 		}
 		
-		AnyLicenseInfo concludedLicense;
+		AnyLicenseInfo concludedLicense = null;
 		Cell concludedLicenseCell = row.getCell(CONCLUDED_LIC_COL);
 		if (Objects.nonNull(concludedLicenseCell) && !concludedLicenseCell.getStringCellValue().isEmpty()) {
 			try {
@@ -283,8 +283,6 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			} catch (InvalidLicenseStringException e) {
 				throw new SpreadsheetException("Error getting concluded license for file "+name, e);
 			}
-		} else {
-			throw new SpreadsheetException("Missing concluded license for file "+name);
 		}
 		Collection<AnyLicenseInfo> licenseInfosFromFile = new ArrayList<>();
 		Cell licenseInfoFromFileCell = row.getCell(LIC_INFO_IN_FILE_COL);
@@ -300,12 +298,10 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			}
 		}
 		
-		String copyrightText;
+		String copyrightText = null;
 		Cell copyrightCell = row.getCell(SEEN_COPYRIGHT_COL);
 		if (Objects.nonNull(copyrightCell)) {
 			copyrightText = copyrightCell.getStringCellValue();
-		} else {
-			copyrightText = "";
 		}
 		
 		SpdxFileBuilder fileBuilder = new SpdxFileBuilder(modelStore, documentUri, id, copyManager, 
@@ -503,15 +499,6 @@ public class PerFileSheetV2d2 extends PerFileSheet {
 			if (cell == null) {
 				if (REQUIRED[i]) {
 					return "Required cell "+HEADER_TITLES[i]+" missing for row "+String.valueOf(row.getRowNum());
-				}
-			} else {
-				if (i == CONCLUDED_LIC_COL) {
-					try {
-						LicenseInfoFactory.parseSPDXLicenseString(cell.getStringCellValue(), modelStore, documentUri, copyManager);
-					} catch (InvalidSPDXAnalysisException ex) {
-						return "Invalid asserted license string in row "+String.valueOf(row.getRowNum()) +
-								" details: "+ex.getMessage();
-					}
 				}
 			}
 		}

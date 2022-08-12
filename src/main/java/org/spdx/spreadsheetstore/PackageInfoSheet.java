@@ -69,8 +69,10 @@ public abstract class PackageInfoSheet extends AbstractSheet {
 			return new PackageInfoSheetV2d0(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
 		} else if (version.compareTo(SpdxSpreadsheet.VERSION_2_1_0) <= 0) {
 			return new PackageInfoSheetV2d1(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
-		} else {
+		} else if (version.compareTo(SpdxSpreadsheet.VERSION_2_2_0) <= 0) {
 			return new PackageInfoSheetV2d2(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
+		} else {
+			return new PackageInfoSheetV2d3(workbook, packageInfoSheetName, version, modelStore, documentUri, copyManager);
 		}
 	}
 

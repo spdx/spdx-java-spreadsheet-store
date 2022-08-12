@@ -21,7 +21,6 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.library.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
 import org.spdx.library.model.GenericSpdxElement;
 import org.spdx.library.model.Relationship;
 import org.spdx.library.model.SpdxElement;
@@ -69,13 +68,12 @@ public class RelationshipSheetTest extends TestCase {
 	}
 	
 	public void testAddandGet() throws InvalidSPDXAnalysisException, SpreadsheetException {
-		String testUri = "https://olex.openlogic.com/package_versions/download/4832?path=openlogic/zlib/1.2.3/zlib-1.2.3-all-src.zip&amp;package_version_id=1082";
 		SpdxElement element1 = new GenericSpdxElement(modelStore, DOCUMENT_URI, "SPDXRef-1", copyManager, true);
 		SpdxElement element2 = new GenericSpdxElement(modelStore, DOCUMENT_URI, "SPDXRef-2", copyManager, true);		
 		Relationship rel1 = element2.createRelationship(element1, RelationshipType.AMENDS, "Comment1");
 		SpdxElement element3 = new GenericSpdxElement(modelStore, DOCUMENT_URI, "SPDXRef-3", copyManager, true);		
 		Relationship rel2 = element3.createRelationship(element2, RelationshipType.CONTAINS, null);
-		Relationship rel3 = element1.createRelationship(element3, RelationshipType.COPY_OF, "Comment2");
+		Relationship rel3 = element1.createRelationship(element3, RelationshipType.SPECIFICATION_FOR, "Comment2");
 		Workbook wb = new HSSFWorkbook();
 		RelationshipsSheet.create(wb, "Relationship Info");
 		RelationshipsSheet sheet = new RelationshipsSheet(wb, "Relationship Info", 

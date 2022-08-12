@@ -55,14 +55,15 @@ public class SpdxSpreadsheet {
 	 * version using the static method <code>openVersion(Workbook wb, String sheetName, String versionNumber)</code>
 	 * Each sheet also implements a method to create the latest version <code>create(Workbook wb, String sheetName)</code>
 	 */
-	public static final String CURRENT_VERSION = "2.2.0";
+	public static final String CURRENT_VERSION = "2.3.0";
+	public static final String VERSION_2_2_0 = "2.2.0";
 	public static final String VERSION_2_1_0 = "2.1.0";
 	public static final String VERSION_2_0_0 = "2.0.0";
 
 	public static final String UNKNOWN_VERSION = "UNKNOWN";
 	public static final String UNKNOWN_NAMESPACE = "http://spdx.unknown.namespace";
 	public static final List<String> SUPPORTED_VERSIONS = Collections.unmodifiableList(Arrays.asList(
-			new String[]{CURRENT_VERSION, VERSION_2_1_0, VERSION_2_0_0}));
+			new String[]{CURRENT_VERSION, VERSION_2_2_0, VERSION_2_1_0, VERSION_2_0_0}));
 	
 	Workbook workbook;
 	
