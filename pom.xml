@@ -4,7 +4,7 @@
 
   <groupId>org.spdx</groupId>
   <artifactId>spdx-spreadsheet-store</artifactId>
-  <version>1.1.0</version>
+  <version>1.1.1</version>
   <packaging>jar</packaging>
 
   <name>spdx-spreadsheet-store</name>
@@ -34,6 +34,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>spdx</sonar.organization>
     <sonar.projectKey>spdx-spreadsheet-store</sonar.projectKey>
+    <dependency-check-maven.version>7.2.1</dependency-check-maven.version>
   </properties>
   <developers>
 	<developer>
@@ -101,7 +102,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.1.0</version>
+    	<version>1.1.1</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.poi</groupId>
@@ -136,6 +137,11 @@
 		</testResource>
 	</testResources>
 	<plugins>
+		<plugin>
+			<groupId>org.owasp</groupId>
+			<artifactId>dependency-check-maven</artifactId>
+			<version>${dependency-check-maven.version}</version>
+		</plugin>	
 		<plugin>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-compiler-plugin</artifactId>
