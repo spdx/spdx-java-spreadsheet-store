@@ -34,6 +34,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>spdx</sonar.organization>
     <sonar.projectKey>spdx-spreadsheet-store</sonar.projectKey>
+    <dependency-check-maven.version>7.2.1</dependency-check-maven.version>
   </properties>
   <developers>
 	<developer>
@@ -136,6 +137,11 @@
 		</testResource>
 	</testResources>
 	<plugins>
+		<plugin>
+			<groupId>org.owasp</groupId>
+			<artifactId>dependency-check-maven</artifactId>
+			<version>${dependency-check-maven.version}</version>
+		</plugin>	
 		<plugin>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-compiler-plugin</artifactId>
