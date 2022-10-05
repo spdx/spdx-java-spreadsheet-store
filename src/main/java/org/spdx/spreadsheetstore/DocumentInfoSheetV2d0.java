@@ -144,7 +144,6 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private String validateRow(Row row) {
 		for (int i = 0; i < NUM_COLS; i++) {
 			Cell cell = row.getCell(i);
@@ -154,7 +153,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 				}
 			} else {
 				if (i == CREATED_COL) {
-					if (!(cell.getCellTypeEnum() == CellType.NUMERIC)) {
+					if (!(cell.getCellType() == CellType.NUMERIC)) {
 						return "Created column in origin spreadsheet is not of type Date";
 					}
 				}
