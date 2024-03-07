@@ -139,7 +139,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>1.1.10</version>
+    	<version>1.1.11</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.poi</groupId>
@@ -205,7 +205,7 @@
 		<plugin>
 			<groupId>org.spdx</groupId>
 				<artifactId>spdx-maven-plugin</artifactId>
-				<version>0.7.1</version>
+				<version>0.7.3</version>
 				<executions>
 					<execution>
 						<id>build-spdx</id>
