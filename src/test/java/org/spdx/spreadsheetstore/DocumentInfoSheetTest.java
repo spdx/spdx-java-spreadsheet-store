@@ -24,14 +24,18 @@ import java.util.Iterator;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v3.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -54,6 +58,9 @@ public class DocumentInfoSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_URI, copyManager);
 	}
 
 	/* (non-Javadoc)
@@ -181,10 +188,10 @@ public class DocumentInfoSheetTest extends TestCase {
 		Workbook wb = new HSSFWorkbook();
 		DocumentInfoSheet.create(wb, "Origins", DOCUMENT_URI);
 		DocumentInfoSheet originsSheet = DocumentInfoSheet.openVersion(wb, "Origins", SpdxSpreadsheet.CURRENT_VERSION, modelStore, copyManager);
-		SpdxDocument doc = SpdxModelFactory.createSpdxDocument(modelStore, DOCUMENT_URI, new ModelCopyManager());
-		String externalDocumentId1 = modelStore.getNextId(IdType.DocumentRef, DOCUMENT_URI);
-		String externalDocumentId2 = modelStore.getNextId(IdType.DocumentRef, DOCUMENT_URI);
-		String externalDocumentId3 = modelStore.getNextId(IdType.DocumentRef, DOCUMENT_URI);
+		SpdxDocument doc = SpdxModelFactoryCompatV2.createSpdxDocumentV2(modelStore, DOCUMENT_URI, new ModelCopyManager());
+		String externalDocumentId1 = modelStore.getNextId(IdType.DocumentRef);
+		String externalDocumentId2 = modelStore.getNextId(IdType.DocumentRef);
+		String externalDocumentId3 = modelStore.getNextId(IdType.DocumentRef);
 		String externalDocumentUri1 = "http://external1";
 		String externalDocumentUri2 = "http://external2";
 		String externalDocumentUri3 = "http://external3";
@@ -203,12 +210,12 @@ public class DocumentInfoSheetTest extends TestCase {
 		assertModelObjectsEquiv(externalDocRefs, result);
 	}
 
-	private void assertModelObjectsEquiv(Collection<? extends ModelObject> mo1,
-			Collection<? extends ModelObject> mo2) {
+	private void assertModelObjectsEquiv(Collection<? extends ModelObjectV2> mo1,
+			Collection<? extends ModelObjectV2> mo2) {
 		assertEquals(mo1.size(), mo2.size());
 		mo1.forEach(mo -> {
 			boolean found = false;
-			Iterator<? extends ModelObject> iter = mo2.iterator();
+			Iterator<? extends ModelObjectV2> iter = mo2.iterator();
 			while (iter.hasNext() && !found) {
 				try {
 					if (iter.next().equivalent(mo)) {

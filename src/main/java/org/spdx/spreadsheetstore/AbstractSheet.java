@@ -46,11 +46,11 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.storage.IModelStore;
 
 import com.opencsv.CSVParser;

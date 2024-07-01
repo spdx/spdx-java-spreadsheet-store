@@ -25,13 +25,15 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.enumerations.RelationshipType;
+import org.spdx.library.model.v2.ExternalSpdxElement;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
 import org.spdx.storage.IModelStore;
 
 /**
@@ -166,7 +168,12 @@ public class RelationshipsSheet extends AbstractSheet {
 			Optional<SpdxElement> relatedElement = relationship.getRelatedSpdxElement();
 			if (relatedElement.isPresent()) {
 				Cell relatedIdCell = row.createCell(RELATED_ID_COL, CellType.STRING);
-				relatedIdCell.setCellValue(relatedElement.get().getId());
+				if (relatedElement.get() instanceof ExternalSpdxElement) {
+					SpdxDocument referencingDoc = new SpdxDocument(modelStore, documentUri, copyManager, false);
+					relatedIdCell.setCellValue(((ExternalSpdxElement)relatedElement.get()).referenceElementId(referencingDoc));
+				} else {
+					relatedIdCell.setCellValue(relatedElement.get().getId());
+				}
 			}		
 			Optional<String> comment = relationship.getComment();
 			if (comment.isPresent()) {
@@ -215,7 +222,7 @@ public class RelationshipsSheet extends AbstractSheet {
 		}
 		SpdxElement element;
 		try {
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(modelStore, documentUri, relatedId, copyManager);
+			Optional<ModelObjectV2> mo = SpdxModelFactoryCompatV2.getModelObjectV2(modelStore, documentUri, relatedId, copyManager);
 			if (!mo.isPresent()) {
 				throw new SpreadsheetException("No element found for relationship with related ID "+relatedId);
 			}

@@ -22,11 +22,15 @@ import java.util.List;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.enumerations.ReferenceCategory;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ReferenceType;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.enumerations.ReferenceCategory;
+import org.spdx.library.model.v3.SpdxModelInfoV3_0;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
@@ -71,41 +75,44 @@ public class ExternalRefsSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_NAMSPACE, copyManager);
 		REFERENCE_TYPE_CPE32 = ListedReferenceTypes.getListedReferenceTypes().getListedReferenceTypeByName(CPE32_NAME);
 		REFERENCE_TYPE_MAVEN = ListedReferenceTypes.getListedReferenceTypes().getListedReferenceTypeByName(MAVEN_NAME);
 		REFERENCE_TYPE_FULL_URI = new ReferenceType(FULL_REFRENCE_TYPE_URI);
 		REFERENCE_TYPE_LOCAL_TO_PACKAGE = new ReferenceType(DOCUMENT_NAMSPACE + "#" + LOCAL_REFERENCE_TYPE_NAME);
 		
 		EXTERNAL_PKG1_REF1 = new ExternalRef(modelStore, DOCUMENT_NAMSPACE,
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_NAMSPACE), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		EXTERNAL_PKG1_REF1.setReferenceCategory(ReferenceCategory.SECURITY);
 		EXTERNAL_PKG1_REF1.setReferenceLocator("LocatorPkg1Ref1");
 		EXTERNAL_PKG1_REF1.setReferenceType(REFERENCE_TYPE_CPE32);
 		EXTERNAL_PKG1_REF1.setComment("CommentPkg1Ref1");
 		
 		EXTERNAL_PKG1_REF2 = new ExternalRef(modelStore, DOCUMENT_NAMSPACE,
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_NAMSPACE), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		EXTERNAL_PKG1_REF2.setReferenceCategory(ReferenceCategory.PACKAGE_MANAGER);
 		EXTERNAL_PKG1_REF2.setReferenceLocator("LocatorPkg1Ref2");
 		EXTERNAL_PKG1_REF2.setReferenceType(REFERENCE_TYPE_MAVEN);
 		EXTERNAL_PKG1_REF2.setComment("CommentPkg1Ref2");		
 
 		EXTERNAL_PKG1_REF3 = new ExternalRef(modelStore, DOCUMENT_NAMSPACE,
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_NAMSPACE), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		EXTERNAL_PKG1_REF3.setReferenceCategory(ReferenceCategory.OTHER);
 		EXTERNAL_PKG1_REF3.setReferenceLocator("LocatorPkg1Ref2");
 		EXTERNAL_PKG1_REF3.setReferenceType(REFERENCE_TYPE_LOCAL_TO_PACKAGE);
 		EXTERNAL_PKG1_REF3.setComment("CommentPkg1Ref2");		
 
 		EXTERNAL_PKG2_REF1 = new ExternalRef(modelStore, DOCUMENT_NAMSPACE,
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_NAMSPACE), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		EXTERNAL_PKG2_REF1.setReferenceCategory(ReferenceCategory.SECURITY);
 		EXTERNAL_PKG2_REF1.setReferenceLocator("LocatorPkg2Ref1");
 		EXTERNAL_PKG2_REF1.setReferenceType(REFERENCE_TYPE_CPE32);
 		EXTERNAL_PKG2_REF1.setComment("CommentPk21Ref1");		
 
 		EXTERNAL_PKG2_REF2 = new ExternalRef(modelStore, DOCUMENT_NAMSPACE,
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_NAMSPACE), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		EXTERNAL_PKG2_REF2.setReferenceCategory(ReferenceCategory.OTHER);
 		EXTERNAL_PKG2_REF2.setReferenceLocator("LocatorPkg2Ref2");
 		EXTERNAL_PKG2_REF2.setReferenceType(REFERENCE_TYPE_FULL_URI);

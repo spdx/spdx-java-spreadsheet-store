@@ -79,7 +79,6 @@ public class SpdxSpreadsheet {
 	static final String RELATIONSHIPS_SHEET_NAME = "Relationships";
 	private AnnotationsSheet annotationsSheet;
 	static final String ANNOTATIONS_SHEET_NAME = "Annotations";
-	private ReviewersSheet reviewersSheet;
 	static final String REVIEWERS_SHEET_NAME = "Reviewers";
 	private SnippetSheet snippetSheet;
 	static final String SNIPPET_SHEET_NAME = "Snippets";
@@ -129,7 +128,6 @@ public class SpdxSpreadsheet {
 		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
 		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME, modelStore, this.documentUri, copyManager);
-		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 
@@ -169,7 +167,6 @@ public class SpdxSpreadsheet {
 		this.perFileSheet = PerFileSheet.openVersion(this.workbook, PER_FILE_SHEET_NAME, version, modelStore, this.documentUri, copyManager);
 		this.relationshipsSheet = new RelationshipsSheet(this.workbook, RELATIONSHIPS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.annotationsSheet = new AnnotationsSheet(this.workbook, ANNOTATIONS_SHEET_NAME, modelStore, this.documentUri, copyManager);
-		this.reviewersSheet = new ReviewersSheet(this.workbook, REVIEWERS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.snippetSheet = new SnippetSheet(this.workbook, SNIPPET_SHEET_NAME, modelStore, this.documentUri, copyManager);
 		this.externalRefsSheet = new ExternalRefsSheet(this.workbook, EXTERNAL_REFS_SHEET_NAME, modelStore, this.documentUri, copyManager);
 	}
@@ -183,7 +180,6 @@ public class SpdxSpreadsheet {
 		RelationshipsSheet.create(workbook, RELATIONSHIPS_SHEET_NAME);
 		AnnotationsSheet.create(workbook, ANNOTATIONS_SHEET_NAME);
 		SnippetSheet.create(workbook, SNIPPET_SHEET_NAME);
-		ReviewersSheet.create(workbook, REVIEWERS_SHEET_NAME);
 	}
 	
 	public void clear() {
@@ -193,7 +189,6 @@ public class SpdxSpreadsheet {
 		this.perFileSheet.clear();
 		this.relationshipsSheet.clear();
 		this.annotationsSheet.clear();
-		this.reviewersSheet.clear();
 		this.snippetSheet.clear();
 		this.externalRefsSheet.clear();
 	}
@@ -236,9 +231,6 @@ public class SpdxSpreadsheet {
 		}
 		if (retval == null || retval.isEmpty()) {
 			retval = this.perFileSheet.verify();
-		}
-		if (retval == null || retval.isEmpty()) {
-			retval = this.reviewersSheet.verify();
 		}
 		if (retval == null || retval.isEmpty()) {
 			retval = this.relationshipsSheet.verify();
@@ -290,21 +282,6 @@ public class SpdxSpreadsheet {
 	public PerFileSheet getPerFileSheet() {
 		return perFileSheet;
 	}
-
-	/**
-	 * @return the reviewersSheet
-	 */
-	public ReviewersSheet getReviewersSheet() {
-		return reviewersSheet;
-	}
-
-	/**
-	 * @param reviewersSheet the reviewersSheet to set
-	 */
-	public void setReviewersSheet(ReviewersSheet reviewersSheet) {
-		this.reviewersSheet = reviewersSheet;
-	}
-	
 	public RelationshipsSheet getRelationshipsSheet() {
 		return relationshipsSheet;
 	}

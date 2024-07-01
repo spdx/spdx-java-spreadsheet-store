@@ -22,10 +22,11 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.enumerations.FileType;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.enumerations.FileType;
 import org.spdx.storage.IModelStore;
 
 /**
@@ -86,8 +87,9 @@ public abstract class PerFileSheet extends AbstractSheet {
 	 * Get the file information for a row in the PerFileSheet
 	 * @param rowNum
 	 * @return
+	 * @throws DefaultStoreNotInitialized 
 	 */
-	public abstract SpdxFile getFileInfo(int rowNum) throws SpreadsheetException;
+	public abstract SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized;
 
 	/**	
 	 * Create a blank worksheet NOTE: Replaces / deletes existing sheet by the same name

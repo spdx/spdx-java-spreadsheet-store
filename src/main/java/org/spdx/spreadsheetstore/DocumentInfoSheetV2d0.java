@@ -36,17 +36,17 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.SimpleLicensingInfo;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxCreatorInformation;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.SimpleLicensingInfo;
 import org.spdx.storage.IModelStore;
 
 /**
@@ -381,7 +381,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		if (created == null) {
 			throw(new SpreadsheetException("Missing created date"));
 		}
-		DateFormat dateFormat = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);	
+		DateFormat dateFormat = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);	
 		try {
 			setCreated(dateFormat.parse(created));
 		} catch (ParseException e) {

@@ -32,18 +32,19 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.SpdxVerificationHelper;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxPackage.SpdxPackageBuilder;
-import org.spdx.library.model.SpdxPackageVerificationCode;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.InvalidLicenseStringException;
-import org.spdx.library.model.license.LicenseInfoFactory;
+import org.spdx.library.model.v2.SpdxVerificationHelper;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxPackage.SpdxPackageBuilder;
+import org.spdx.library.model.v2.SpdxPackageVerificationCode;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.InvalidLicenseStringException;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -102,7 +103,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	private static final ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>(){
 	    @Override
 	    protected DateFormat initialValue() {
-	        return new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
+	        return new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
 	    }
 	  };
 	
@@ -182,7 +183,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			} else {
 				if (i == DECLARED_LICENSE_COL || i == CONCLUDED_LICENSE_COL) {
 					try {
-						LicenseInfoFactory.parseSPDXLicenseString(cell.getStringCellValue(), verifyModelStore, documentUri, null);
+						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), verifyModelStore, documentUri, null);
 					} catch(InvalidSPDXAnalysisException ex) {
 						if (i == DECLARED_LICENSE_COL) {
 							return "Invalid declared license in row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
@@ -197,7 +198,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 					}
 					for (int j = 0; j < licenses.length; j++) {
 						try {
-							LicenseInfoFactory.parseSPDXLicenseString(licenses[j], verifyModelStore, documentUri, null);
+							LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenses[j], verifyModelStore, documentUri, null);
 						} catch(InvalidSPDXAnalysisException ex) {
 							return "Invalid license information in in files for license "+licenses[j]+ " row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
 						}
@@ -415,7 +416,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	/* (non-Javadoc)
 	 * @see org.spdx.spreadsheetstore.PackageInfoSheet#getPackages()
 	 */
-	public List<SpdxPackage> getPackages() throws SpreadsheetException {
+	public List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitialized {
 		List<SpdxPackage> retval = new ArrayList<>();
 		for (int i = 0; i < getNumDataRows(); i++) {
 			retval.add(getPackage(getFirstDataRow() + i));
@@ -427,8 +428,9 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	 * @param rowNum
 	 * @return SPDX package at the row rowNum, null if there is no package at that row
 	 * @throws SpreadsheetException
+	 * @throws DefaultStoreNotInitialized 
 	 */
-	private SpdxPackage getPackage(int rowNum) throws SpreadsheetException {
+	private SpdxPackage getPackage(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
 			return null;
@@ -449,7 +451,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		Cell concludedLicensesCell = row.getCell(CONCLUDED_LICENSE_COL);
 		if (concludedLicensesCell != null && !concludedLicensesCell.getStringCellValue().isEmpty()) {
 			try {
-				concludedLicense = LicenseInfoFactory.parseSPDXLicenseString(concludedLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
+				concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(concludedLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e) {
 				throw new SpreadsheetException("Invalid concluded license file for package "+declaredName, e);
 			}
@@ -465,7 +467,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		Cell declaredLicensesCell = row.getCell(DECLARED_LICENSE_COL);
 		if (declaredLicensesCell != null && !declaredLicensesCell.getStringCellValue().isEmpty()) {
 			try {
-				declaredLicenses = LicenseInfoFactory.parseSPDXLicenseString(declaredLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
+				declaredLicenses = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(declaredLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e1) {
 				throw new SpreadsheetException("Invalid declared license  for package "+declaredName, e1);
 			}
@@ -502,7 +504,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			Collection<AnyLicenseInfo> licenseInfosFromFiles = new ArrayList<>();
 			for (int i = 0; i < licenseStrings.length; i++) {
 				try {
-					licenseInfosFromFiles.add(LicenseInfoFactory.parseSPDXLicenseString(licenseStrings[i].trim(), modelStore, documentUri, copyManager));
+					licenseInfosFromFiles.add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenseStrings[i].trim(), modelStore, documentUri, copyManager));
 				} catch (InvalidLicenseStringException e) {
 					throw new SpreadsheetException("Invalid license infos from file for package "+declaredName, e);
 				}
@@ -551,7 +553,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 				}
 			}
 			try {
-				SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, documentUri, modelStore.getNextId(IdType.Anonymous, documentUri), copyManager, true);
+				SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, documentUri, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				verificationCode.setValue(packageVerificationValue);
 				verificationCode.getExcludedFileNames().addAll(excludedFiles);
 				retval.setPackageVerificationCode(verificationCode);

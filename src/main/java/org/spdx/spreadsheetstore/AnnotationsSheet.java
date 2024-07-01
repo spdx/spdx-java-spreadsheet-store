@@ -25,11 +25,11 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.enumerations.AnnotationType;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.enumerations.AnnotationType;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 
@@ -57,7 +57,7 @@ public class AnnotationsSheet extends AbstractSheet {
 
 	static final boolean[] REQUIRED = new boolean[] {true, true, true, true, true, false};
 	
-	final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
+	final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
 
 
 	/**
@@ -230,7 +230,7 @@ public class AnnotationsSheet extends AbstractSheet {
 		}
 		try {
 			Annotation retval = new Annotation(modelStore, documentUri, 
-					modelStore.getNextId(IdType.Anonymous, documentUri), copyManager, true);
+					modelStore.getNextId(IdType.Anonymous), copyManager, true);
 			retval.setAnnotationDate(date);
 			retval.setAnnotationType(type);
 			retval.setAnnotator(annotator);

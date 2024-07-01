@@ -26,39 +26,47 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
+import org.spdx.library.LicenseInfoFactory;
+import org.spdx.library.ListedLicenses;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ExternalSpdxElement;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxNoAssertionElement;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.enumerations.AnnotationType;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.FileType;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.enumerations.ReferenceCategory;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.ListedLicenses;
-import org.spdx.library.model.license.SpdxNoAssertionLicense;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ExternalSpdxElement;
+import org.spdx.library.model.v2.ReferenceType;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxCreatorInformation;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxNoAssertionElement;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.enumerations.AnnotationType;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.FileType;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.enumerations.ReferenceCategory;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v3.SpdxModelInfoV3_0;
 import org.spdx.library.referencetype.ListedReferenceTypes;
+import org.spdx.storage.CompatibleModelStoreWrapper;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
 import org.spdx.utility.compare.SpdxComparer;
@@ -194,7 +202,10 @@ public class SpreadsheetStoreTest extends TestCase {
 		compareStore = new InMemSpdxStore();
 		String compDocUri = "http://compare.doc.uri/test";
 		ModelCopyManager copyManager = new ModelCopyManager();
-		compareDocument = SpdxModelFactory.createSpdxDocument(compareStore, compDocUri, copyManager);
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(new InMemSpdxStore(), "https://default", copyManager);
+		compareDocument = SpdxModelFactoryCompatV2.createSpdxDocumentV2(compareStore, compDocUri, copyManager);
 		compareDocument.setName("SPDX-Tools-v2.0");
 		compareDocument.setComment("This document was created using SPDX 2.0 using licenses from the web site.");
 		
@@ -205,8 +216,8 @@ public class SpreadsheetStoreTest extends TestCase {
 														"The binaries were created with gcc 4.5.1 and expect to link to\n"+
 														"compatible system run time libraries.");
 		AnyLicenseInfo noAssertionLicense = new SpdxNoAssertionLicense();
-		AnyLicenseInfo gpl2only = ListedLicenses.getListedLicenses().getListedLicenseById("GPL-2.0-only");
-		AnyLicenseInfo apache20 = ListedLicenses.getListedLicenses().getListedLicenseById("Apache-2.0");
+		AnyLicenseInfo gpl2only = ListedLicenses.getListedLicenses().getListedLicenseByIdCompatV2("GPL-2.0-only");
+		AnyLicenseInfo apache20 = ListedLicenses.getListedLicenses().getListedLicenseByIdCompatV2("Apache-2.0");
 		ExtractedLicenseInfo licenseRef1 = new ExtractedLicenseInfo(compareStore, compDocUri, "LicenseRef-1", copyManager, true);
 		licenseRef1.setExtractedText(LICENSEREF1_TEXT);
 		ExtractedLicenseInfo licenseRef2 = new ExtractedLicenseInfo(compareStore, compDocUri, "LicenseRef-2", copyManager, true);
@@ -235,9 +246,9 @@ public class SpreadsheetStoreTest extends TestCase {
 				.setFilesAnalyzed(false)
 				.build());
 		SpdxPackage spdxrefPackage = compareDocument.createPackage("SPDXRef-Package", 
-				"glibc", LicenseInfoFactory.parseSPDXLicenseString("(LicenseRef-3 OR LGPL-2.0-only)", compareStore, compDocUri, copyManager), 
+				"glibc", LicenseInfoFactory.parseSPDXLicenseStringCompatV2("(LicenseRef-3 OR LGPL-2.0-only)", compareStore, compDocUri, copyManager), 
 				"Copyright 2008-2010 John Smith", 
-				LicenseInfoFactory.parseSPDXLicenseString("(LicenseRef-3 AND LGPL-2.0-only)", compareStore, compDocUri, copyManager))
+				LicenseInfoFactory.parseSPDXLicenseStringCompatV2("(LicenseRef-3 AND LGPL-2.0-only)", compareStore, compDocUri, copyManager))
 				.setVersionInfo("2.11.1")
 				.setPackageFileName("glibc-2.11.1.tar.gz")
 				.setSupplier("Person: Jane Doe (jane.doe@example.com)")
@@ -277,9 +288,9 @@ public class SpreadsheetStoreTest extends TestCase {
 				.setFilesAnalyzed(false)
 				.build());
 		SpdxPackage spdxrefSaxon = compareDocument.createPackage("SPDXRef-Saxon", 
-				"Saxon", LicenseInfoFactory.parseSPDXLicenseString("MPL-1.0", compareStore, compDocUri, copyManager), 
+				"Saxon", LicenseInfoFactory.parseSPDXLicenseStringCompatV2("MPL-1.0", compareStore, compDocUri, copyManager), 
 				"NOASSERTION", 
-				LicenseInfoFactory.parseSPDXLicenseString("MPL-1.0", compareStore, compDocUri, copyManager))
+				LicenseInfoFactory.parseSPDXLicenseStringCompatV2("MPL-1.0", compareStore, compDocUri, copyManager))
 				.setLicenseComments("Other versions available for a commercial license")
 				.setDescription("The Saxon package is a collection of tools for processing XML documents.")
 				.setPackageFileName("saxonB-8.8.zip")
@@ -292,7 +303,7 @@ public class SpreadsheetStoreTest extends TestCase {
 		comparePackages.put("SPDXRef-Saxon", spdxrefSaxon);
 		
 		SpdxFile spdxrefFile = compareDocument.createSpdxFile("SPDXRef-File", 
-				"./package/foo.c", LicenseInfoFactory.parseSPDXLicenseString("(LGPL-2.0-only OR LicenseRef-2)", compareStore, compDocUri, copyManager), 
+				"./package/foo.c", LicenseInfoFactory.parseSPDXLicenseStringCompatV2("(LGPL-2.0-only OR LicenseRef-2)", compareStore, compDocUri, copyManager), 
 				Arrays.asList(new AnyLicenseInfo[]{gpl2only, licenseRef2}), "Copyright 2008-2010 John Smith", 
 				compareDocument.createChecksum(ChecksumAlgorithm.SHA1, "d6a770ba38583ed4bb4525bd96e50461655d2758"))
 				.addFileType(FileType.SOURCE)
@@ -400,19 +411,19 @@ public class SpreadsheetStoreTest extends TestCase {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
 		String documentUri = "http://newdoc/uri";
 		ModelCopyManager copyManager = new ModelCopyManager();
-		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstants.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
+		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
 			try {
-				copyManager.copy(sst, documentUri, compareStore, compareDocument.getDocumentUri(), 
-						tv.getId(), tv.getType());
+				copyManager.copy(sst, compareStore, tv.getObjectUri(), 
+						tv.getType(), CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new RuntimeException(e);
 			}
 		});
 		compareStore.getAllItems(compareDocument.getDocumentUri(), null).forEach(tv -> {
 			try {
-				if (!SpdxConstants.CLASS_EXTERNAL_DOC_REF.equals(tv.getType())) {
-					copyManager.copy(sst, documentUri, compareStore, compareDocument.getDocumentUri(), 
-							tv.getId(), tv.getType());
+				if (!SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF.equals(tv.getType())) {
+					copyManager.copy(sst, compareStore, tv.getObjectUri(), 
+							tv.getType(), CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
 				}
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new RuntimeException(e);
@@ -422,13 +433,16 @@ public class SpreadsheetStoreTest extends TestCase {
 		Path tempFilePath = Files.createTempFile("temp", ".xlsx");
 		try {
 			try (FileOutputStream out = new FileOutputStream(tempFilePath.toFile())) {
-				sst.serialize(documentUri, out);
+				sst.serialize(out);
 			}
 			SpreadsheetStore resultStore = new SpreadsheetStore(new InMemSpdxStore());
-			String resultDocUri;
 			try (FileInputStream stream = new FileInputStream(tempFilePath.toFile())) {
-				resultDocUri = resultStore.deSerialize(stream, false);
+				resultStore.deSerialize(stream, false);
 			}
+			List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+			assertEquals(1, allDocs.size());
+			String resultDocUri = allDocs.get(0).getDocumentUri();
 			assertEquals(documentUri, resultDocUri);
 			ModelCopyManager cm = new ModelCopyManager();
 			SpdxDocument doc = new SpdxDocument(resultStore, resultDocUri, cm, false);
@@ -441,7 +455,8 @@ public class SpreadsheetStoreTest extends TestCase {
 			comparer.compare(compareDocument, doc);
 			assertFalse(comparer.isDifferenceFound());
 			// Files
-			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxFile.class)) {
+			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentUri, documentUri + "#")) {
 			    elementStream.forEach(element -> {
 	                try {
 	                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
@@ -452,7 +467,8 @@ public class SpreadsheetStoreTest extends TestCase {
 			}
 			
 			// Packages
-           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxPackage.class)) {
+           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, documentUri, documentUri + "#")) {
                 elementStream.forEach(element -> {
                     try {
                      	assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
@@ -463,7 +479,8 @@ public class SpreadsheetStoreTest extends TestCase {
             }
 
 			// Snippets
-            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(resultStore, documentUri, cm, SpdxSnippet.class)) {
+            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, documentUri, documentUri + "#")) {
                elementStream.forEach(element -> {
                    try {
                        assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
@@ -486,18 +503,22 @@ public class SpreadsheetStoreTest extends TestCase {
 	@SuppressWarnings("unchecked")
     public void testDeSerialize() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
-		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_3_FILENAME)) {
-			documentUri = sst.deSerialize(stream, false);
+			sst.deSerialize(stream, false);
 		}
-		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		ModelCopyManager cm = new ModelCopyManager();
+		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+		assertEquals(1, allDocs.size());
+		String documentUri = allDocs.get(0).getDocumentUri();
+		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
 		
 		// Document fields and extracted license infos
 		assertDocFields(doc, "SPDX-2.3");
 		// Files
-        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+        try (Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentUri, documentUri + "#")) {
           elementStream.forEach(element -> {
                 try {
                     assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
@@ -509,7 +530,8 @@ public class SpreadsheetStoreTest extends TestCase {
           
 
 		// Snippets
-        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+        try (Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, documentUri, documentUri + "#")) {
           elementStream.forEach(element -> {
                 try {
                     assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
@@ -519,7 +541,8 @@ public class SpreadsheetStoreTest extends TestCase {
             });
         }
 		// Packages
-		try(Stream<SpdxElement> packageStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+		try (Stream<SpdxElement> packageStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, documentUri, documentUri + "#")) {
 		    packageStream.forEach(element -> {
     			try {
 //    				Relationship[] relationships = ((SpdxElement)element).getRelationships().toArray(new Relationship[((SpdxElement)element).getRelationships().size()]);
@@ -535,19 +558,23 @@ public class SpreadsheetStoreTest extends TestCase {
 	@SuppressWarnings("unchecked")
     public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
-		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_3_FILENAME_XLS)) {
-			documentUri = sst.deSerialize(stream, false);
+			sst.deSerialize(stream, false);
 		}
-		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		ModelCopyManager cm = new ModelCopyManager();
-		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
+		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+		assertEquals(1, allDocs.size());
+		String documentUri = allDocs.get(0).getDocumentUri();
+		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		
+		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
 		// Document fields and extracted license infos
 		assertDocFields(doc, "SPDX-2.3");
 
 		// Packages
-		try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxPackage.class)) {
+		try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, documentUri, documentUri + "#")) {
 		    elementStream.forEach(element -> {
 	            try {
 	                assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
@@ -558,7 +585,8 @@ public class SpreadsheetStoreTest extends TestCase {
 		}
 		
 		// Files
-        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxFile.class)) {
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentUri, documentUri + "#")) {
             elementStream.forEach(element -> {
                 try {
                     assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
@@ -569,7 +597,8 @@ public class SpreadsheetStoreTest extends TestCase {
         }
 		
 		// Snippets
-        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getElements(sst, documentUri, cm, SpdxSnippet.class)) {
+        try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, documentUri, documentUri + "#")) {
             elementStream.forEach(element -> {
                 try {
                     assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
@@ -580,14 +609,18 @@ public class SpreadsheetStoreTest extends TestCase {
         }
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void testDeSerializeV2() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());
-		String documentUri;
 		try (FileInputStream stream = new FileInputStream(SPREADSHEET_2_0_FILENAME)) {
-			documentUri = sst.deSerialize(stream, false);
+			sst.deSerialize(stream, false);
 		}
-		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		ModelCopyManager cm = new ModelCopyManager();
+		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(sst, cm,
+				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+		assertEquals(1, allDocs.size());
+		String documentUri = allDocs.get(0).getDocumentUri();
+		assertEquals("http://spdx.org/spdxdocs/spdx-example-444504E0-4F89-41D3-9A0C-0305E82C3301", documentUri);
 		SpdxDocument doc = new SpdxDocument(sst, documentUri, cm, false);
 		assertDocFields(doc, "SPDX-2.0");
 	}
@@ -666,7 +699,7 @@ public class SpreadsheetStoreTest extends TestCase {
 				assertEquals(RelationshipType.DESCRIBES, rel.getRelationshipType());
 			} else if (rel.getRelatedSpdxElement().get() instanceof ExternalSpdxElement) {
 				assertEquals(RelationshipType.COPY_OF, rel.getRelationshipType());
-				assertEquals("DocumentRef-spdx-tool-1.2:SPDXRef-ToolsElement", rel.getRelatedSpdxElement().get().getId());
+				assertEquals("SPDXRef-ToolsElement", rel.getRelatedSpdxElement().get().getId());
 			} else {
 				fail("Unexpected relationship type for related ID "+rel.getRelatedSpdxElement().get().getId());
 			}
