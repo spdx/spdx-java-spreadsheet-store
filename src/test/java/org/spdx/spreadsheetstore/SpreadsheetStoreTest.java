@@ -414,7 +414,7 @@ public class SpreadsheetStoreTest extends TestCase {
 		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
 			try {
 				copyManager.copy(sst, compareStore, tv.getObjectUri(), 
-						tv.getType(), CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+						CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new RuntimeException(e);
 			}
@@ -423,7 +423,7 @@ public class SpreadsheetStoreTest extends TestCase {
 			try {
 				if (!SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF.equals(tv.getType())) {
 					copyManager.copy(sst, compareStore, tv.getObjectUri(), 
-							tv.getType(), CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+							CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
 				}
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new RuntimeException(e);
