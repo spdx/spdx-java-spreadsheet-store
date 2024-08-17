@@ -35,7 +35,7 @@ import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
 import org.spdx.library.model.v2.SpdxModelInfoV2_X;
 import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.v3.SpdxModelInfoV3_0;
+import org.spdx.library.model.v3_0_0.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
