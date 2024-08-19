@@ -38,8 +38,11 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spdx.core.CoreModelObject;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
@@ -103,18 +106,32 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	@Override
 	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(stream, null);
+	}
+	
+	@Override
+	public void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
-		@SuppressWarnings("unchecked")
-		List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, copyManager, 
-				SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
-				.collect(Collectors.toList());
-		if (allDocs.size() > 1) {
-			throw new InvalidSPDXAnalysisException("Ambiguous document to stream - spreadsheet store should only contain one SPDX document");
+		SpdxDocument doc = null;
+		if (Objects.nonNull(modelObject)) {
+			if (modelObject instanceof SpdxDocument) {
+				doc = (SpdxDocument)modelObject;
+			} else {
+				throw new InvalidSPDXAnalysisException("Can not serialize "+modelObject.getClass().toString()+".  Only SpdxDocument is supported");
+			}
+		} else {
+			@SuppressWarnings("unchecked")
+			List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, copyManager, 
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
+					.collect(Collectors.toList());
+			if (allDocs.size() > 1) {
+				throw new InvalidSPDXAnalysisException("Ambiguous document to stream - spreadsheet store should only contain one SPDX document");
+			}
+			if (allDocs.isEmpty()) {
+				throw new InvalidSPDXAnalysisException("No SPDX documents to serlialize");
+			}
+			doc = allDocs.get(0);
 		}
-		if (allDocs.isEmpty()) {
-			throw new InvalidSPDXAnalysisException("No SPDX documents to serlialize");
-		}
-		SpdxDocument doc = allDocs.get(0);
 		String documentUri = doc.getDocumentUri();
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(this, copyManager, documentUri, spreadsheetFormat);
 		ss.getOriginsSheet().addDocument(doc);
@@ -348,7 +365,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	@Override
-	public void deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this, copyManager);
 		if (this.exists(ss.getDocumentUri() + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID)) {
@@ -371,6 +388,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		Map<String, List<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
 		// Note - the copy missing file contains should be after copying relationships
 		copyAnyMissingFileContains(ss.getPerFileSheet(), pkgIdToPackage, fileIdToFile, packageContainsFileIds);
+		return document;
 	}
 
 	/**
