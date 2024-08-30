@@ -44,7 +44,7 @@ import org.spdx.library.model.v2.license.ConjunctiveLicenseSet;
 import org.spdx.library.model.v2.license.DisjunctiveLicenseSet;
 import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoneLicense;
-import org.spdx.library.model.v3_0_0.SpdxModelInfoV3_0;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
