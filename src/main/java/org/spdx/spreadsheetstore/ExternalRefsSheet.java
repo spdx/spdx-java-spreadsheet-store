@@ -32,11 +32,11 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.ReferenceType;
-import org.spdx.library.model.enumerations.ReferenceCategory;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ReferenceType;
+import org.spdx.library.model.v2.enumerations.ReferenceCategory;
 import org.spdx.library.referencetype.ListedReferenceTypes;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
@@ -249,7 +249,7 @@ public class ExternalRefsSheet extends AbstractSheet {
 			try {
 			if (Objects.nonNull(pkgIdCell) && id.equals(pkgIdCell.getStringCellValue())) {
 				ExternalRef er = new ExternalRef(modelStore, documentUri, 
-						modelStore.getNextId(IdType.Anonymous, documentUri), copyManager, true);
+						modelStore.getNextId(IdType.Anonymous), copyManager, true);
 				
 				Cell refCategoryCell = row.getCell(REF_CATEGORY_COL);
 				if (refCategoryCell != null) {

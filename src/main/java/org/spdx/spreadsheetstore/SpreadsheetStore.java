@@ -38,27 +38,31 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.CoreModelObject;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.ExternalRef;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxCreatorInformation;
-import org.spdx.library.model.SpdxDocument;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.SpdxListedLicense;
+import org.spdx.library.SpdxModelFactory;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.ExternalRef;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxCreatorInformation;
+import org.spdx.library.model.v2.SpdxDocument;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.SpdxListedLicense;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
@@ -80,7 +84,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>(){
 	    @Override
 	    protected DateFormat initialValue() {
-	        return new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT);
+	        return new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
 	    }
 	  };
 
@@ -101,9 +105,34 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	@Override
-	public void serialize(String documentUri, OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
+		serialize(stream, null);
+	}
+	
+	@Override
+	public void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
-		SpdxDocument doc = new SpdxDocument(this, documentUri, copyManager, false);
+		SpdxDocument doc = null;
+		if (Objects.nonNull(modelObject)) {
+			if (modelObject instanceof SpdxDocument) {
+				doc = (SpdxDocument)modelObject;
+			} else {
+				throw new InvalidSPDXAnalysisException("Can not serialize "+modelObject.getClass().toString()+".  Only SpdxDocument is supported");
+			}
+		} else {
+			@SuppressWarnings("unchecked")
+			List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(this, copyManager, 
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null)
+					.collect(Collectors.toList());
+			if (allDocs.size() > 1) {
+				throw new InvalidSPDXAnalysisException("Ambiguous document to stream - spreadsheet store should only contain one SPDX document");
+			}
+			if (allDocs.isEmpty()) {
+				throw new InvalidSPDXAnalysisException("No SPDX documents to serlialize");
+			}
+			doc = allDocs.get(0);
+		}
+		String documentUri = doc.getDocumentUri();
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(this, copyManager, documentUri, spreadsheetFormat);
 		ss.getOriginsSheet().addDocument(doc);
 		Map<String, Collection<ExternalRef>> externalRefs = new TreeMap<String, Collection<ExternalRef>>();
@@ -172,8 +201,8 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	    List<SpdxSnippet> snippets;
 	    try(
 		  @SuppressWarnings("unchecked")
-		  Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getElements(
-	                this, documentUri, copyManager, SpdxSnippet.class)) {
+		  Stream<SpdxSnippet> snippetStream = (Stream<SpdxSnippet>)SpdxModelFactory.getSpdxObjects(
+	                this, copyManager, SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, documentUri, documentUri + "#")) {
 		    snippets = snippetStream.collect(Collectors.toList());
 		}
 		Collections.sort(snippets);
@@ -206,8 +235,8 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	    List<SpdxFile> files;
 	    try(
 		    @SuppressWarnings("unchecked")
-		    Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getElements(
-	                this, documentUri, copyManager, SpdxFile.class)) {
+		    Stream<SpdxFile> fileStream = (Stream<SpdxFile>)SpdxModelFactory.getSpdxObjects(
+	                this, copyManager, SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentUri, documentUri + "#")) {
 		    files = fileStream.collect(Collectors.toList());
 		}
 		Collections.sort(files);
@@ -300,8 +329,8 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		List<SpdxPackage> packages;
 		
 		try (@SuppressWarnings("unchecked")
-		Stream<SpdxPackage> packageStream = (Stream<SpdxPackage>)SpdxModelFactory.getElements(
-                this, documentUri, copyManager, SpdxPackage.class)) {
+		Stream<SpdxPackage> packageStream = (Stream<SpdxPackage>)SpdxModelFactory.getSpdxObjects(
+                this, copyManager, SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, documentUri, documentUri + "#")) {
 		    packages = packageStream.collect(Collectors.toList());
 		}
 		Collections.sort(packages);
@@ -336,18 +365,17 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	@Override
-	public String deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this, copyManager);
-		if (this.exists(ss.getDocumentUri(), SpdxConstants.SPDX_DOCUMENT_ID)) {
+		if (this.exists(ss.getDocumentUri() + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID)) {
 			if (!overwrite) {
 				throw new InvalidSPDXAnalysisException("Document "+ss.getDocumentUri()+" already exists.");
 			}
-			this.clear(ss.getDocumentUri());
+			this.clear();
 		}
 		SpdxDocument document = new SpdxDocument(this, ss.getDocumentUri(), copyManager, true);
 		copyDocumentInfoFromSS(ss.getOriginsSheet(), document, ss.getDocumentUri(), copyManager);
-		ss.getReviewersSheet().addReviewsToDocAnnotations();
 		copyExtractedLicenseInfosFromSS(ss.getExtractedLicenseInfoSheet(), document, ss.getDocumentUri(), copyManager);
 		// note - non std licenses must be added first so that the text is available
 		Map<String, SpdxPackage> pkgIdToPackage = copyPackageInfoFromSS(ss.getPackageInfoSheet(), 
@@ -360,7 +388,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		Map<String, List<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
 		// Note - the copy missing file contains should be after copying relationships
 		copyAnyMissingFileContains(ss.getPerFileSheet(), pkgIdToPackage, fileIdToFile, packageContainsFileIds);
-		return ss.getDocumentUri();
+		return document;
 	}
 
 	/**
@@ -449,15 +477,15 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		document.setSpecVersion(specVersion);
 		String dataLicenseId = documentInfoSheet.getDataLicense();
 		if (dataLicenseId == null || dataLicenseId.isEmpty()) {
-			dataLicenseId = SpdxConstants.SPDX_DATA_LICENSE_ID;
+			dataLicenseId = SpdxConstantsCompatV2.SPDX_DATA_LICENSE_ID;
 		}
 		SpdxListedLicense dataLicense = null;
 		try {
-			dataLicense = (SpdxListedLicense)LicenseInfoFactory.parseSPDXLicenseString(dataLicenseId, this, documentUri, copyManager);
+			dataLicense = (SpdxListedLicense)LicenseInfoFactory.parseSPDXLicenseStringCompatV2(dataLicenseId, this, documentUri, copyManager);
 		} catch (Exception ex) {
-			logger.warn("Unable to parse the provided standard license ID.  Using "+SpdxConstants.SPDX_DATA_LICENSE_ID);
+			logger.warn("Unable to parse the provided standard license ID.  Using "+SpdxConstantsCompatV2.SPDX_DATA_LICENSE_ID);
 			try {
-				dataLicense = (SpdxListedLicense)LicenseInfoFactory.parseSPDXLicenseString(SpdxConstants.SPDX_DATA_LICENSE_ID, this, documentUri, copyManager);
+				dataLicense = (SpdxListedLicense)LicenseInfoFactory.parseSPDXLicenseStringCompatV2(SpdxConstantsCompatV2.SPDX_DATA_LICENSE_ID, this, documentUri, copyManager);
 			} catch (Exception e) {
 				throw(new InvalidSPDXAnalysisException("Unable to get document license"));
 			}
@@ -555,7 +583,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		Relationship relationship = relationshipsSheet.getRelationship(i);
 		String id = relationshipsSheet.getElmementId(i);
 		while (Objects.nonNull(relationship) && Objects.nonNull(id)) {
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(analysis.getModelStore(),
+			Optional<ModelObjectV2> mo = SpdxModelFactoryCompatV2.getModelObjectV2(analysis.getModelStore(),
 					analysis.getDocumentUri(), id, analysis.getCopyManager());
 			if (!mo.isPresent()) {
 				throw new SpreadsheetException("Missing SPDX element for relationship: "+id);
@@ -602,7 +630,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		Annotation annotation = annotationsSheet.getAnnotation(i);
 		String id = annotationsSheet.getElmementId(i);
 		while (annotation != null && id != null) {
-			Optional<ModelObject> mo = SpdxModelFactory.getModelObject(analysis.getModelStore(),
+			Optional<ModelObjectV2> mo = SpdxModelFactoryCompatV2.getModelObjectV2(analysis.getModelStore(),
 					analysis.getDocumentUri(), id, analysis.getCopyManager());
 			if (!mo.isPresent()) {
 				throw new SpreadsheetException("Missing SPDX element for annotation: "+id);

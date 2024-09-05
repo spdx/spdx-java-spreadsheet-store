@@ -19,12 +19,16 @@ package org.spdx.spreadsheetstore;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.GenericSpdxElement;
-import org.spdx.library.model.Relationship;
-import org.spdx.library.model.SpdxElement;
-import org.spdx.library.model.enumerations.RelationshipType;
+import org.spdx.library.model.v2.GenericSpdxElement;
+import org.spdx.library.model.v2.Relationship;
+import org.spdx.library.model.v2.SpdxElement;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.simple.InMemSpdxStore;
 
@@ -47,6 +51,9 @@ public class RelationshipSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_URI, copyManager);
 	}
 
 	/* (non-Javadoc)

@@ -27,20 +27,24 @@ import java.util.GregorianCalendar;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxPackageVerificationCode;
-import org.spdx.library.model.SpdxPackage.SpdxPackageBuilder;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.Purpose;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.ConjunctiveLicenseSet;
-import org.spdx.library.model.license.DisjunctiveLicenseSet;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.SpdxNoneLicense;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxPackageVerificationCode;
+import org.spdx.library.model.v2.SpdxPackage.SpdxPackageBuilder;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.Purpose;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.ConjunctiveLicenseSet;
+import org.spdx.library.model.v2.license.DisjunctiveLicenseSet;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.SpdxNoneLicense;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -63,6 +67,9 @@ public class PackageInfoSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_URI, copyManager);
 	}
 
 	/* (non-Javadoc)
@@ -87,27 +94,27 @@ public class PackageInfoSheetTest extends TestCase {
 
 	public void testAddAndGet() throws SpreadsheetException, InvalidSPDXAnalysisException {
 		Collection<AnyLicenseInfo> testLicenses1 = new ArrayList<>();
-		testLicenses1.add(createExtractedLicense("License1", "License1Text"));
+		testLicenses1.add(createExtractedLicense("LicenseRef-License1", "License1Text"));
 		Collection<AnyLicenseInfo> disjunctiveLicenses = new ArrayList<>();
-		disjunctiveLicenses.add(createExtractedLicense("disj1", "disj1 Text"));
-		disjunctiveLicenses.add(createExtractedLicense("disj2", "disj2 Text"));
-		disjunctiveLicenses.add(createExtractedLicense("disj3", "disj3 Text"));
+		disjunctiveLicenses.add(createExtractedLicense("LicenseRef-disj1", "disj1 Text"));
+		disjunctiveLicenses.add(createExtractedLicense("LicenseRef-disj2", "disj2 Text"));
+		disjunctiveLicenses.add(createExtractedLicense("LicenseRef-disj3", "disj3 Text"));
 		testLicenses1.add(createDisjunctiveLicenseSet(disjunctiveLicenses));
 		Collection<AnyLicenseInfo> conjunctiveLicenses = new ArrayList<>();
-		conjunctiveLicenses.add(createExtractedLicense("conj1", "conj1 Text"));
-		conjunctiveLicenses.add(createExtractedLicense("conj2", "conj2 Text"));
+		conjunctiveLicenses.add(createExtractedLicense("LicenseRef-conj1", "conj1 Text"));
+		conjunctiveLicenses.add(createExtractedLicense("LicenseRef-conj2", "conj2 Text"));
 
 		testLicenses1.add(createConjunctiveLicenseSet(conjunctiveLicenses));
 		AnyLicenseInfo testLicense1 = createDisjunctiveLicenseSet(testLicenses1);
 
 //		String lic1String = PackageInfoSheet.licensesToString(testLicenses1);
 		Collection<AnyLicenseInfo>  testLicenses2 =  new ArrayList<>();
-		testLicenses2.add(createExtractedLicense("License3", "License 3 text"));
-		testLicenses2.add(createExtractedLicense("License4", "License 4 text"));
+		testLicenses2.add(createExtractedLicense("LicenseRef-License3", "License 3 text"));
+		testLicenses2.add(createExtractedLicense("LicenseRef-License4", "License 4 text"));
 		AnyLicenseInfo testLicense2 = createConjunctiveLicenseSet(testLicenses2);
 		Collection<AnyLicenseInfo> testLicenseInfos = new ArrayList<>();
 		testLicenseInfos.add(new SpdxNoneLicense());
-		SpdxPackageVerificationCode testVerification = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+		SpdxPackageVerificationCode testVerification = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		testVerification.setValue("value");
 		testVerification.getExcludedFileNames().add("skippedfil1");
 		testVerification.getExcludedFileNames().add("skippedfile2");
@@ -116,9 +123,9 @@ public class PackageInfoSheetTest extends TestCase {
 		Checksum sha1 = Checksum.create(modelStore, DOCUMENT_URI, ChecksumAlgorithm.SHA1, "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
 		Checksum blake2b = Checksum.create(modelStore, DOCUMENT_URI, ChecksumAlgorithm.BLAKE2b_384, "aaabd89c926ab525c242e6621f2f5fa73aa4afe3d9e24aed727faaadd6af38b620bdb623dd2b4788b1c8086984af8706");
 
-		String releaseDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2021, Calendar.JANUARY, 11).getTime());
-		String buildDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2020, Calendar.JANUARY, 11).getTime());
-		String validUntilDate = new SimpleDateFormat(SpdxConstants.SPDX_DATE_FORMAT).format(new GregorianCalendar(2023, Calendar.JANUARY, 11).getTime());
+		String releaseDate = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).format(new GregorianCalendar(2021, Calendar.JANUARY, 11).getTime());
+		String buildDate = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).format(new GregorianCalendar(2020, Calendar.JANUARY, 11).getTime());
+		String validUntilDate = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).format(new GregorianCalendar(2023, Calendar.JANUARY, 11).getTime());
 		SpdxPackage pkgInfo1 = new SpdxPackageBuilder(modelStore, DOCUMENT_URI,  "SPDXRef-Package1", copyManager, 
 				"decname1", testLicense1, "dec-copyright1", testLicense2)
 				.addChecksum(sha1)
@@ -184,13 +191,13 @@ public class PackageInfoSheetTest extends TestCase {
 	}
 
 	private DisjunctiveLicenseSet createDisjunctiveLicenseSet(Collection<AnyLicenseInfo> disjunctiveLicenses) throws InvalidSPDXAnalysisException {
-		DisjunctiveLicenseSet retval = new DisjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+		DisjunctiveLicenseSet retval = new DisjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		retval.getMembers().addAll(disjunctiveLicenses);
 		return retval;
 	}
 	
 	private ConjunctiveLicenseSet createConjunctiveLicenseSet(Collection<AnyLicenseInfo> conjunctiveLicenses) throws InvalidSPDXAnalysisException {
-		ConjunctiveLicenseSet retval = new ConjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+		ConjunctiveLicenseSet retval = new ConjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		retval.getMembers().addAll(conjunctiveLicenses);
 		return retval;
 	}

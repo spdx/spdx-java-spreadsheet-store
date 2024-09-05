@@ -27,8 +27,8 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.ExternalDocumentRef;
-import org.spdx.library.model.SpdxDocument;
+import org.spdx.library.model.v2.ExternalDocumentRef;
+import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.storage.IModelStore;
 
 /**

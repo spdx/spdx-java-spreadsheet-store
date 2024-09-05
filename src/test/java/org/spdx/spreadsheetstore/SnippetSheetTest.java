@@ -22,20 +22,24 @@ import java.util.Collection;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxFile.SpdxFileBuilder;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.SpdxSnippet.SpdxSnippetBuilder;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.FileType;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.ConjunctiveLicenseSet;
-import org.spdx.library.model.license.DisjunctiveLicenseSet;
-import org.spdx.library.model.license.ExtractedLicenseInfo;
-import org.spdx.library.model.license.SpdxListedLicense;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.SpdxFile.SpdxFileBuilder;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.SpdxSnippet.SpdxSnippetBuilder;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.FileType;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.ConjunctiveLicenseSet;
+import org.spdx.library.model.v2.license.DisjunctiveLicenseSet;
+import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
+import org.spdx.library.model.v2.license.SpdxListedLicense;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -48,7 +52,7 @@ import junit.framework.TestCase;
  */
 public class SnippetSheetTest extends TestCase {
 
-	static final String[] NONSTD_IDS = new String[] {"id1", "id2", "id3", "id4"};
+	static final String[] NONSTD_IDS = new String[] {"LicenseRef-id1", "LicenseRef-id2", "LicenseRef-id3", "LicenseRef-id4"};
 	static final String[] NONSTD_TEXTS = new String[] {"text1", "text2", "text3", "text4"};
 	static final String[] STD_IDS = new String[] {"AFL-3.0", "CECILL-B", "EUPL-1.0"};
 	static final String[] STD_TEXTS = new String[] {"std text1", "std text2", "std text3"};
@@ -71,6 +75,9 @@ public class SnippetSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_URI, copyManager);
 		NON_STD_LICENSES = new ExtractedLicenseInfo[NONSTD_IDS.length];
 		for (int i = 0; i < NONSTD_IDS.length; i++) {
 			NON_STD_LICENSES[i] = new ExtractedLicenseInfo(NONSTD_IDS[i], NONSTD_TEXTS[i]);
@@ -109,20 +116,14 @@ public class SnippetSheetTest extends TestCase {
 	}
 	
 	private DisjunctiveLicenseSet createDisjunctiveLicenseSet(Collection<AnyLicenseInfo> disjunctiveLicenses) throws InvalidSPDXAnalysisException {
-		DisjunctiveLicenseSet retval = new DisjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+		DisjunctiveLicenseSet retval = new DisjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		retval.getMembers().addAll(disjunctiveLicenses);
 		return retval;
 	}
 	
 	private ConjunctiveLicenseSet createConjunctiveLicenseSet(Collection<AnyLicenseInfo> conjunctiveLicenses) throws InvalidSPDXAnalysisException {
-		ConjunctiveLicenseSet retval = new ConjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+		ConjunctiveLicenseSet retval = new ConjunctiveLicenseSet(modelStore, DOCUMENT_URI, modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		retval.getMembers().addAll(conjunctiveLicenses);
-		return retval;
-	}
-
-	private ExtractedLicenseInfo createExtractedLicense(String id, String text) throws InvalidSPDXAnalysisException {
-		ExtractedLicenseInfo retval = new ExtractedLicenseInfo(modelStore, DOCUMENT_URI, id, copyManager, true);
-		retval.setExtractedText(text);
 		return retval;
 	}
 

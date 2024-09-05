@@ -17,7 +17,7 @@
  */
 package org.spdx.spreadsheetstore;
 
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.InvalidSPDXAnalysisException;
 
 /**
  * Exceptions related to SPDX Spreadsheets

@@ -36,21 +36,22 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.ModelObject;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxModelFactory;
-import org.spdx.library.model.SpdxSnippet;
-import org.spdx.library.model.SpdxSnippet.SpdxSnippetBuilder;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.InvalidLicenseStringException;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.SpdxNoAssertionLicense;
-import org.spdx.library.model.pointer.ByteOffsetPointer;
-import org.spdx.library.model.pointer.LineCharPointer;
-import org.spdx.library.model.pointer.SinglePointer;
-import org.spdx.library.model.pointer.StartEndPointer;
+import org.spdx.library.model.v2.ModelObjectV2;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxModelFactoryCompatV2;
+import org.spdx.library.model.v2.SpdxSnippet;
+import org.spdx.library.model.v2.SpdxSnippet.SpdxSnippetBuilder;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.InvalidLicenseStringException;
+import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v2.pointer.ByteOffsetPointer;
+import org.spdx.library.model.v2.pointer.LineCharPointer;
+import org.spdx.library.model.v2.pointer.SinglePointer;
+import org.spdx.library.model.v2.pointer.StartEndPointer;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 
@@ -160,7 +161,7 @@ public class SnippetSheet extends AbstractSheet {
 			} else {
 				if (i == CONCLUDED_LICENSE_COL) {
 					try {
-						LicenseInfoFactory.parseSPDXLicenseString(cell.getStringCellValue(), modelStore, documentUri, copyManager);
+						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), modelStore, documentUri, copyManager);
 					} catch (InvalidSPDXAnalysisException ex) {
 						return "Invalid asserted license string in row "+String.valueOf(row.getRowNum()) +
 								" details: "+ex.getMessage();
@@ -328,8 +329,9 @@ public class SnippetSheet extends AbstractSheet {
 	 * @param rowNum
 	 * @return Snippet at the row rowNum or null if the row does not exist
 	 * @throws SpreadsheetException 
+	 * @throws DefaultStoreNotInitialized 
 	 */
-	public @Nullable SpdxSnippet getSnippet(int rowNum) throws SpreadsheetException {
+	public @Nullable SpdxSnippet getSnippet(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
 		if (sheet == null) {
 			return null;
 		}
@@ -346,7 +348,7 @@ public class SnippetSheet extends AbstractSheet {
 			id = row.getCell(ID_COL).getStringCellValue();
 		} else {
 			try {
-				id = modelStore.getNextId(IdType.Anonymous, documentUri);
+				id = modelStore.getNextId(IdType.Anonymous);
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new SpreadsheetException("Error getting anonymous ID");
 			}
@@ -365,7 +367,7 @@ public class SnippetSheet extends AbstractSheet {
 		Cell concludedLicenseCell = row.getCell(CONCLUDED_LICENSE_COL);
 		if (concludedLicenseCell != null && !concludedLicenseCell.getStringCellValue().trim().isEmpty()) {
 			try {
-				concludedLicense = LicenseInfoFactory.parseSPDXLicenseString(concludedLicenseCell.getStringCellValue(), 
+				concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(concludedLicenseCell.getStringCellValue(), 
 						modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e) {
 				throw new SpreadsheetException("Invalid license expression "+concludedLicenseCell.getStringCellValue(),e);
@@ -383,7 +385,7 @@ public class SnippetSheet extends AbstractSheet {
 		if (seenLicenseCell != null && !seenLicenseCell.getStringCellValue().trim().isEmpty()) {
 			for (String licenseString:seenLicenseCell.getStringCellValue().split(",")) {
 				try {
-					licenseInfosFromFile.add(LicenseInfoFactory.parseSPDXLicenseString(licenseString.trim(), 
+					licenseInfosFromFile.add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenseString.trim(), 
 							modelStore, documentUri, copyManager));
 				} catch (InvalidLicenseStringException e) {
 					throw new SpreadsheetException("Invalid license expression in License Infos from File: "+licenseString,e);
@@ -409,9 +411,9 @@ public class SnippetSheet extends AbstractSheet {
 		if (Objects.isNull(snippetFromFileId) || snippetFromFileId.isEmpty()) {
 			throw new SpreadsheetException("Missing required Snippet From File ID for Snippet ID "+id);
 		}
-		Optional<ModelObject> moFromFile;
+		Optional<ModelObjectV2> moFromFile;
 		try {
-			moFromFile = SpdxModelFactory.getModelObject(modelStore, documentUri, snippetFromFileId, copyManager);
+			moFromFile = SpdxModelFactoryCompatV2.getModelObjectV2(modelStore, documentUri, snippetFromFileId, copyManager);
 		} catch (InvalidSPDXAnalysisException e) {
 			throw new SpreadsheetException("Error getting SnippetFromFile",e);
 		}

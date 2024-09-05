@@ -19,10 +19,14 @@ package org.spdx.spreadsheetstore;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultModelStore;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.core.ModelRegistry;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.model.Annotation;
-import org.spdx.library.model.enumerations.AnnotationType;
+import org.spdx.library.model.v2.Annotation;
+import org.spdx.library.model.v2.SpdxModelInfoV2_X;
+import org.spdx.library.model.v2.enumerations.AnnotationType;
+import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -46,6 +50,9 @@ public class AnnotationsSheetTest extends TestCase {
 		super.setUp();
 		modelStore = new InMemSpdxStore();
 		copyManager = new ModelCopyManager();
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV2_X());
+		ModelRegistry.getModelRegistry().registerModel(new SpdxModelInfoV3_0());
+		DefaultModelStore.initialize(modelStore, DOCUMENT_URI, copyManager);
 	}
 
 	/* (non-Javadoc)
@@ -73,14 +80,14 @@ public class AnnotationsSheetTest extends TestCase {
 				modelStore, DOCUMENT_URI, copyManager);
 		
 		Annotation an1 = new Annotation(modelStore, DOCUMENT_URI, 
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		an1.setAnnotator("Person: Annotator1");
 		an1.setAnnotationDate("2010-01-29T18:30:22Z");
 		an1.setAnnotationType(AnnotationType.OTHER);
 		an1.setComment("Comment1");
 		
 		Annotation an2 = new Annotation(modelStore, DOCUMENT_URI, 
-				modelStore.getNextId(IdType.Anonymous, DOCUMENT_URI), copyManager, true);
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
 		an2.setAnnotator("Person: Annotator2");
 		an2.setAnnotationDate("2015-01-29T18:30:22Z");
 		an2.setAnnotationType(AnnotationType.REVIEW);

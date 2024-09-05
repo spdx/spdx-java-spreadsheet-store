@@ -31,20 +31,21 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.library.InvalidSPDXAnalysisException;
+import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.InvalidSPDXAnalysisException;
+import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
-import org.spdx.library.SpdxConstants;
-import org.spdx.library.model.Checksum;
-import org.spdx.library.model.SpdxFile;
-import org.spdx.library.model.SpdxFile.SpdxFileBuilder;
-import org.spdx.library.model.SpdxPackage;
-import org.spdx.library.model.SpdxPackage.SpdxPackageBuilder;
-import org.spdx.library.model.enumerations.ChecksumAlgorithm;
-import org.spdx.library.model.enumerations.RelationshipType;
-import org.spdx.library.model.license.AnyLicenseInfo;
-import org.spdx.library.model.license.InvalidLicenseStringException;
-import org.spdx.library.model.license.LicenseInfoFactory;
-import org.spdx.library.model.license.SpdxNoAssertionLicense;
+import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
+import org.spdx.library.model.v2.SpdxFile;
+import org.spdx.library.model.v2.SpdxFile.SpdxFileBuilder;
+import org.spdx.library.model.v2.SpdxPackage;
+import org.spdx.library.model.v2.SpdxPackage.SpdxPackageBuilder;
+import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
+import org.spdx.library.model.v2.enumerations.RelationshipType;
+import org.spdx.library.model.v2.license.AnyLicenseInfo;
+import org.spdx.library.model.v2.license.InvalidLicenseStringException;
+import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 
@@ -220,7 +221,7 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 	 * @see org.spdx.spreadsheetstore.PerFileSheet#getFileInfo(int)
 	 */
 	@Override
-	public SpdxFile getFileInfo(int rowNum) throws SpreadsheetException {
+	public SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
 			return null;
@@ -241,7 +242,7 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 			id = idCell.getStringCellValue().trim();
 		} else {
 			try {
-				id = modelStore.getNextId(IdType.Anonymous, documentUri);
+				id = modelStore.getNextId(IdType.Anonymous);
 			} catch (InvalidSPDXAnalysisException e) {
 				throw new SpreadsheetException("Error getting element ID for file "+name, e);
 			}
@@ -278,7 +279,7 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 		Cell concludedLicenseCell = row.getCell(CONCLUDED_LIC_COL);
 		if (Objects.nonNull(concludedLicenseCell) && !concludedLicenseCell.getStringCellValue().isEmpty()) {
 			try {
-				concludedLicense = LicenseInfoFactory.parseSPDXLicenseString(concludedLicenseCell.getStringCellValue(), 
+				concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(concludedLicenseCell.getStringCellValue(), 
 						modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e) {
 				throw new SpreadsheetException("Error getting concluded license for file "+name, e);
@@ -290,7 +291,7 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 			String[] licenseStrings = licenseInfoFromFileCell.getStringCellValue().split(",");
 			for (int i = 0; i < licenseStrings.length; i++) {
 				try {
-					licenseInfosFromFile.add(LicenseInfoFactory.parseSPDXLicenseString(licenseStrings[i].trim(),
+					licenseInfosFromFile.add(LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenseStrings[i].trim(),
 							modelStore, documentUri, copyManager));
 				} catch (InvalidLicenseStringException e) {
 					throw new SpreadsheetException("Error getting license infos from file for file "+name, e);
@@ -376,8 +377,8 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 			}
 			for (int i = 0; i < projectNames.size(); i++) {
 				SpdxPackageBuilder pkgBuilder = new SpdxPackageBuilder(modelStore, documentUri, 
-						SpdxConstants.SPDX_ELEMENT_REF_PRENUM + "FromDoap-"+Integer.toString(i), 
-						copyManager, projectNames.get(i), noAssertion, SpdxConstants.NOASSERTION_VALUE,
+						SpdxConstantsCompatV2.SPDX_ELEMENT_REF_PRENUM + "FromDoap-"+Integer.toString(i), 
+						copyManager, projectNames.get(i), noAssertion, SpdxConstantsCompatV2.NOASSERTION_VALUE,
 						noAssertion)
 						.setFilesAnalyzed(false);
 				if (projectHomePages.size() > i) {
@@ -421,8 +422,9 @@ public class PerFileSheetV2d3 extends PerFileSheet {
 	 * @param fileName
 	 * @return
 	 * @throws SpreadsheetException 
+	 * @throws DefaultStoreNotInitialized 
 	 */
-	public SpdxFile findFileByName(String fileName) throws SpreadsheetException {
+	public SpdxFile findFileByName(String fileName) throws SpreadsheetException, DefaultStoreNotInitialized {
 		if (this.fileCache.containsKey(fileName)) {
 			return this.fileCache.get(fileName);
 		}
