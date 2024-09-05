@@ -66,7 +66,7 @@ import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
 import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.library.referencetype.ListedReferenceTypes;
-import org.spdx.storage.CompatibleModelStoreWrapper;
+import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
 import org.spdx.utility.compare.SpdxComparer;
