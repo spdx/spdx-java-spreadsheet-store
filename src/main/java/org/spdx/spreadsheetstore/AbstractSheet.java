@@ -326,10 +326,10 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * Create a string from an array of checksums
-	 * @param checksums
-	 * @return
-	 * @throws InvalidSPDXAnalysisException 
+	 * Create a string from a collection of checksums
+	 * @param checksumCollection collection of checksums
+	 * @return string representation of the checksum
+	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
 	 */
 	public String checksumsToString(Collection<Checksum> checksumCollection) throws InvalidSPDXAnalysisException {
 		if (checksumCollection == null || checksumCollection.size() == 0) {
@@ -381,9 +381,9 @@ public abstract class AbstractSheet {
 	
 	/**
 	 * Creates a Checksum from the parameters specified in the tag value
-	 * @param value
-	 * @return
-	 * @throws InvalidSpdxTagFileException
+	 * @param value checksum string formatted with the algorithm
+	 * @return Checksum
+	 * @throws SpreadsheetException on errors parsing the checksum
 	 */
 	public Checksum parseChecksum(String value) throws SpreadsheetException {
 		Matcher matcher = CHECKSUM_PATTERN.matcher(value.trim());
