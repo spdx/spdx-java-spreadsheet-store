@@ -183,7 +183,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			} else {
 				if (i == DECLARED_LICENSE_COL || i == CONCLUDED_LICENSE_COL) {
 					try {
-						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), verifyModelStore, documentUri, null);
+						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), verifyModelStore, documentUri, copyManager);
 					} catch(InvalidSPDXAnalysisException ex) {
 						if (i == DECLARED_LICENSE_COL) {
 							return "Invalid declared license in row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
@@ -198,7 +198,8 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 					}
 					for (int j = 0; j < licenses.length; j++) {
 						try {
-							LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenses[j], verifyModelStore, documentUri, null);
+							LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenses[j], verifyModelStore, documentUri, copyManager
+							);
 						} catch(InvalidSPDXAnalysisException ex) {
 							return "Invalid license information in in files for license "+licenses[j]+ " row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
 						}
@@ -451,7 +452,8 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		Cell concludedLicensesCell = row.getCell(CONCLUDED_LICENSE_COL);
 		if (concludedLicensesCell != null && !concludedLicensesCell.getStringCellValue().isEmpty()) {
 			try {
-				concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(concludedLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
+				concludedLicense = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(concludedLicensesCell.getStringCellValue(),
+						modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e) {
 				throw new SpreadsheetException("Invalid concluded license file for package "+declaredName, e);
 			}
@@ -467,7 +469,8 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		Cell declaredLicensesCell = row.getCell(DECLARED_LICENSE_COL);
 		if (declaredLicensesCell != null && !declaredLicensesCell.getStringCellValue().isEmpty()) {
 			try {
-				declaredLicenses = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(declaredLicensesCell.getStringCellValue(), modelStore, documentUri, copyManager);
+				declaredLicenses = LicenseInfoFactory.parseSPDXLicenseStringCompatV2(declaredLicensesCell.getStringCellValue(),
+						modelStore, documentUri, copyManager);
 			} catch (InvalidLicenseStringException e1) {
 				throw new SpreadsheetException("Invalid declared license  for package "+declaredName, e1);
 			}

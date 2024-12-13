@@ -167,7 +167,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 			} else {
 				if (i == DECLARED_LICENSE_COL || i == CONCLUDED_LICENSE_COL) {
 					try {
-						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), verifyModelStore, documentUri, null);
+						LicenseInfoFactory.parseSPDXLicenseStringCompatV2(cell.getStringCellValue(), verifyModelStore, documentUri, copyManager);
 					} catch(InvalidSPDXAnalysisException ex) {
 						if (i == DECLARED_LICENSE_COL) {
 							return "Invalid declared license in row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
@@ -182,7 +182,7 @@ public class PackageInfoSheetV2d2 extends PackageInfoSheet {
 					}
 					for (int j = 0; j < licenses.length; j++) {
 						try {
-							LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenses[j], verifyModelStore, documentUri, null);
+							LicenseInfoFactory.parseSPDXLicenseStringCompatV2(licenses[j], verifyModelStore, documentUri, copyManager);
 						} catch(InvalidSPDXAnalysisException ex) {
 							return "Invalid license information in in files for license "+licenses[j]+ " row "+String.valueOf(row.getRowNum())+" detail: "+ex.getMessage() + " in PackageInfo sheet.";
 						}
