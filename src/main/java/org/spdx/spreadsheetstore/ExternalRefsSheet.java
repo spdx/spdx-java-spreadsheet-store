@@ -233,8 +233,7 @@ public class ExternalRefsSheet extends AbstractSheet {
 	/**
 	 * Get all external references for a given package ID
 	 * @param id
-	 * @param container
-	 * @return
+	 * @return all external references for a given package ID
 	 * @throws SpreadsheetException 
 	 */
 	public List<ExternalRef> getExternalRefsForPkgid(String id) throws SpreadsheetException {

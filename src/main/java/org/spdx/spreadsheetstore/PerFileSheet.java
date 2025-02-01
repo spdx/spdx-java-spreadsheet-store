@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.DefaultStoreNotInitializedException;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.SpdxFile;
@@ -87,9 +87,9 @@ public abstract class PerFileSheet extends AbstractSheet {
 	 * Get the file information for a row in the PerFileSheet
 	 * @param rowNum
 	 * @return
-	 * @throws DefaultStoreNotInitialized 
+	 * @throws DefaultStoreNotInitializedException
 	 */
-	public abstract SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized;
+	public abstract SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitializedException;
 
 	/**	
 	 * Create a blank worksheet NOTE: Replaces / deletes existing sheet by the same name
@@ -108,7 +108,7 @@ public abstract class PerFileSheet extends AbstractSheet {
 	public abstract List<String> getPackageIds(int row);
 	
 	/**
-	 * @param fileTypes
+	 * @param fileTypeCollection
 	 * @return
 	 */
 	public static String fileTypesToString(Collection<FileType> fileTypeCollection) {

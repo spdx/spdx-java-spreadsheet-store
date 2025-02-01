@@ -328,7 +328,7 @@ public class SpdxSpreadsheet {
 	}
 
 	/**
-	 * @param snippetSheet the snippetSheet to set
+	 * @param externalRefsSheet the externalRefsSheet to set
 	 */
 	public void setExternaRefsSheet(ExternalRefsSheet externalRefsSheet) {
 		this.externalRefsSheet = externalRefsSheet;
