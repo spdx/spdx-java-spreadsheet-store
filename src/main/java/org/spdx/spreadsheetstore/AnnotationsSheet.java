@@ -154,7 +154,7 @@ public class AnnotationsSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param relationship
+	 * @param annotation
 	 * @throws SpreadsheetException 
 	 */
 	public void add(Annotation annotation, String elementId) throws SpreadsheetException {

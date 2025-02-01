@@ -32,7 +32,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.DefaultStoreNotInitializedException;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
@@ -417,7 +417,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	/* (non-Javadoc)
 	 * @see org.spdx.spreadsheetstore.PackageInfoSheet#getPackages()
 	 */
-	public List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitialized {
+	public List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitializedException {
 		List<SpdxPackage> retval = new ArrayList<>();
 		for (int i = 0; i < getNumDataRows(); i++) {
 			retval.add(getPackage(getFirstDataRow() + i));
@@ -429,9 +429,9 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	 * @param rowNum
 	 * @return SPDX package at the row rowNum, null if there is no package at that row
 	 * @throws SpreadsheetException
-	 * @throws DefaultStoreNotInitialized 
+	 * @throws DefaultStoreNotInitializedException
 	 */
-	private SpdxPackage getPackage(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
+	private SpdxPackage getPackage(int rowNum) throws SpreadsheetException, DefaultStoreNotInitializedException {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
 			return null;

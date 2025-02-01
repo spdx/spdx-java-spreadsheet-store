@@ -148,7 +148,7 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	public abstract void setCreatedBy(Collection<String> createdBys);
 
 	/**
-	 * @param id
+	 * @param licenseId
 	 */
 	public abstract void setDataLicense(String licenseId);
 
@@ -158,7 +158,7 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	public abstract void setAuthorComments(String comments);
 
 	/**
-	 * @param parse
+	 * @param createdDate
 	 */
 	public abstract void setCreated(Date createdDate);
 

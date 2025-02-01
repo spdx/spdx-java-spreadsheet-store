@@ -93,9 +93,9 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 	 * Add a new row to the NonStandardLicenses sheet
 	 * @param identifier License ID
 	 * @param extractedText Extracted license text
-	 * @param optional license name
+	 * @param licenseName optional license name
 	 * @param crossRefUrls optional cross reference URL's
-	 * @param optional comment
+	 * @param comment optional comment
 	 */
 	public abstract void add(String identifier, String extractedText, String licenseName,
 			Collection<String> crossRefUrls, String comment);

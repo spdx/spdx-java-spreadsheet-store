@@ -20,7 +20,7 @@ package org.spdx.spreadsheetstore;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.DefaultStoreNotInitializedException;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.SpdxPackage;
@@ -80,9 +80,9 @@ public abstract class PackageInfoSheet extends AbstractSheet {
 	/**
 	 * @return
 	 * @throws SpreadsheetException
-	 * @throws DefaultStoreNotInitialized 
+	 * @throws DefaultStoreNotInitializedException
 	 */
-	public abstract List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitialized;
+	public abstract List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitializedException;
 	
 	/**
 	 * @param pkgInfo

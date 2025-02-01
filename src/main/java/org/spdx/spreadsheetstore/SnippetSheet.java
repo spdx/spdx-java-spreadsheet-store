@@ -36,7 +36,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.DefaultStoreNotInitializedException;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
@@ -288,7 +288,7 @@ public class SnippetSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param byteRange
+	 * @param rangePointer
 	 * @return
 	 * @throws InvalidSPDXAnalysisException 
 	 */
@@ -329,9 +329,9 @@ public class SnippetSheet extends AbstractSheet {
 	 * @param rowNum
 	 * @return Snippet at the row rowNum or null if the row does not exist
 	 * @throws SpreadsheetException 
-	 * @throws DefaultStoreNotInitialized 
+	 * @throws DefaultStoreNotInitializedException
 	 */
-	public @Nullable SpdxSnippet getSnippet(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
+	public @Nullable SpdxSnippet getSnippet(int rowNum) throws SpreadsheetException, DefaultStoreNotInitializedException {
 		if (sheet == null) {
 			return null;
 		}

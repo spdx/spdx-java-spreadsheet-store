@@ -30,7 +30,7 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.spdx.core.DefaultStoreNotInitialized;
+import org.spdx.core.DefaultStoreNotInitializedException;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
@@ -211,7 +211,7 @@ public class PerFileSheetV2d0 extends PerFileSheet {
 	 * @see org.spdx.spreadsheetstore.PerFileSheet#getFileInfo(int)
 	 */
 	@Override
-	public SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitialized {
+	public SpdxFile getFileInfo(int rowNum) throws SpreadsheetException, DefaultStoreNotInitializedException {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
 			return null;
@@ -402,9 +402,9 @@ public class PerFileSheetV2d0 extends PerFileSheet {
 	 * @param fileName
 	 * @return
 	 * @throws SpreadsheetException 
-	 * @throws DefaultStoreNotInitialized 
+	 * @throws DefaultStoreNotInitializedException
 	 */
-	public SpdxFile findFileByName(String fileName) throws SpreadsheetException, DefaultStoreNotInitialized {
+	public SpdxFile findFileByName(String fileName) throws SpreadsheetException, DefaultStoreNotInitializedException {
 		if (this.fileCache.containsKey(fileName)) {
 			return this.fileCache.get(fileName);
 		}
