@@ -1,11 +1,12 @@
 # spdx-java-spreadsheet-store
+
 Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.
 
 This store supports serializing and deserializing files in XLS and XLSX spreadsheet formats.
 
 This library utilizes the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface) extending the `ExtendedSpdxStore` which allows for utilizing any underlying store which implements the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface).
 
-# Using the Library
+## Using the Library
 
 This library is intended to be used in conjunction with the [SPDX Java Library](https://github.com/spdx/Spdx-Java-Library).
 
@@ -16,10 +17,10 @@ Create an instance of `SpreadsheetStore(IModelStore baseStore, SpreadsheetFormat
 - `XLS` - Microsoft Excel 97 to 2003 Workbook format
 - `XLSX` - Microsoft Excel workbook format
 
-# Serializing and Deserializing
+## Serializing and Deserializing
 
 This library supports the `ISerializableModelStore` interface for serializing and deserializing files based on the format specified.
 
-# Development Status
+## Development Status
 
 Mostly stable - although it has not been widely used.
