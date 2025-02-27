@@ -92,7 +92,7 @@
 					<configuration>
 					<archive>
 						<manifestEntries>
-						<Automatic-Module-Name>org.spdx.spreadsheetstore</Automatic-Module-Name>
+							<Automatic-Module-Name>org.spdx.spreadsheetstore</Automatic-Module-Name>
 						</manifestEntries>
 					</archive>
 					</configuration>
