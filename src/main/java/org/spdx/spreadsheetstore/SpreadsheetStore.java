@@ -69,10 +69,10 @@ import org.spdx.storage.ISerializableModelStore;
 import org.spdx.storage.simple.ExtendedSpdxStore;
 
 /**
- * SPDX Java Library store which serializes and deserializes to Microsoft Excel Workbooks
- * 
- * @author Gary O'Neall
+ * SPDX Java Library store which serializes and deserializes to Microsoft Excel
+ * Workbooks
  *
+ * @author Gary O'Neall
  */
 public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializableModelStore {
 	
@@ -90,7 +90,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	  };
 
 	/**
-	 * @param baseStore SPDX model store for deserialization/serialization
+	 * Constructs an SPDX model store which serializes and deserializes to
+	 * Microsoft Excel Workbooks in a specified format
+	 *
+	 * @param baseStore         SPDX model store for deserialization/serialization
 	 * @param spreadsheetFormat format type XLS or XLSX
 	 */
 	public SpreadsheetStore(IModelStore baseStore, SpreadsheetFormatType spreadsheetFormat) {
@@ -99,6 +102,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	/**
+	 * Constructs an SPDX model store which serializes and deserializes to
+	 * Microsoft Excel Workbooks
+	 *
 	 * @param baseStore SPDX model store for deserialization/serialization
 	 */
 	public SpreadsheetStore(IModelStore baseStore) {
@@ -255,7 +261,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * Copy extractedLicenseInfos to the extracteLicenseInfoSheet
+	 * Copy extractedLicenseInfos to the extractedLicenseInfoSheet
 	 * @param extractedLicenseInfos
 	 * @param extractedLicenseInfoSheet
 	 * @throws InvalidSPDXAnalysisException
@@ -398,7 +404,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * @param perFileSheet file spreadsheet
 	 * @param pkgIdToPackage map of Package ID to package
 	 * @param fileIdToFile map of file ID to file
-	 * @param packageContainsFileIds map of package ID to list of file IDs that have a contains relationshp
+	 * @param packageContainsFileIds map of package ID to list of file IDs that have a contains relationship
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	private void copyAnyMissingFileContains(PerFileSheet perFileSheet,

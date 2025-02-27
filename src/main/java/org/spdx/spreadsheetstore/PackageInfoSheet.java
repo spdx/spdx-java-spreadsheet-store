@@ -29,40 +29,39 @@ import org.spdx.storage.IModelStore;
 
 /**
  * Abstract PackageInfoSheet to manage cross-version implementations
- * @author Gary O'Neall
  *
+ * @author Gary O'Neall
  */
 public abstract class PackageInfoSheet extends AbstractSheet {
 	
 	protected String version;
 
 	/**
-	 * @param workbook
-	 * @param sheetName
-	 * @param version
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
+	 * Constructs a new PackageInfoSheet
+	 *
+	 * @param workbook    the workbook containing the sheet
+	 * @param sheetName   the name of the sheet
+	 * @param version     the version of the sheet
+	 * @param modelStore  the model store to use
+	 * @param documentUri the URI of the document
+	 * @param copyManager the copy manager to use
 	 */
 	public PackageInfoSheet(Workbook workbook, String sheetName, String version, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
 		super(workbook, sheetName, modelStore, documentUri, copyManager);
 		this.version = version;
 	}
-	
-	public static void create(Workbook wb, String sheetName) {
-		PackageInfoSheetV2d3.create(wb, sheetName);
-	}
 
 	/**
 	 * Opens an existing PackageInfoSheet
-	 * @param workbook
-	 * @param packageInfoSheetName
-	 * @param version
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
-	 * @return
+	 *
+	 * @param workbook             the workbook containing the sheet
+	 * @param packageInfoSheetName the name of the sheet
+	 * @param version              the version of the sheet
+	 * @param modelStore           the model store to use
+	 * @param documentUri          the URI of the document
+	 * @param copyManager          the copy manager to use
+	 * @return the opened PackageInfoSheet
 	 */
 	public static PackageInfoSheet openVersion(Workbook workbook,
 			String packageInfoSheetName, String version, IModelStore modelStore, 
@@ -79,15 +78,33 @@ public abstract class PackageInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @return
-	 * @throws SpreadsheetException
-	 * @throws DefaultStoreNotInitializedException
+	 * Creates a new PackageInfoSheet in the provided workbook with the specified
+	 * sheet name
+	 *
+	 * @param wb        the workbook where the sheet will be created
+	 * @param sheetName the name of the sheet to be created
+	 */
+	public static void create(Workbook wb, String sheetName) {
+		PackageInfoSheetV2d3.create(wb, sheetName);
+	}
+
+	/**
+	 * Retrieves a list of SPDX packages from the sheet
+	 *
+	 * @return a list of SPDX packages
+	 * @throws SpreadsheetException                if there is an error reading the
+	 *                                             spreadsheet
+	 * @throws DefaultStoreNotInitializedException if the model store is not
+	 *                                             initialized
 	 */
 	public abstract List<SpdxPackage> getPackages() throws SpreadsheetException, DefaultStoreNotInitializedException;
-	
+
 	/**
-	 * @param pkgInfo
-	 * @throws InvalidSPDXAnalysisException
+	 * Adds a new SPDX package to the sheet
+	 *
+	 * @param pkgInfo the SPDX package to add
+	 * @throws InvalidSPDXAnalysisException if there is an error with the SPDX
+	 *                                      analysis
 	 */
 	public abstract void add(SpdxPackage pkgInfo) throws InvalidSPDXAnalysisException;
 }
