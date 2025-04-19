@@ -145,7 +145,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.1</version>
+      <version>4.13.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -156,7 +156,7 @@
     <dependency>
     	<groupId>org.apache.poi</groupId>
     	<artifactId>poi</artifactId>
-    	<version>5.4.0</version>
+    	<version>5.4.1</version>
     </dependency>
     <dependency>
     	<groupId>com.opencsv</groupId>
@@ -166,7 +166,7 @@
     <dependency>
     	<groupId>org.apache.poi</groupId>
     	<artifactId>poi-ooxml</artifactId>
-    	<version>5.4.0</version>
+    	<version>5.4.1</version>
     </dependency>
   </dependencies>
   <build>
