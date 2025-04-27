@@ -201,7 +201,8 @@ public class ExternalRefsSheet extends AbstractSheet {
 	}
 
 	/**
-	 * Convert a reference type to the type used in 
+	 * Convert a reference type to the type used in
+	 *
 	 * @param referenceType
 	 * @return
 	 * @throws InvalidSPDXAnalysisException 
@@ -233,6 +234,7 @@ public class ExternalRefsSheet extends AbstractSheet {
 
 	/**
 	 * Get all external references for a given package ID
+	 *
 	 * @param id
 	 * @return all external references for a given package ID
 	 * @throws SpreadsheetException 
@@ -287,8 +289,13 @@ public class ExternalRefsSheet extends AbstractSheet {
 
 	/**
 	 * Convert a string to a reference type
-	 * @param refTypeStr can be a listed reference type name, a URI string, or a local name
-	 * @return
+	 *
+	 * @param refTypeStr A string representing the reference type. It can be a listed reference type
+	 *        name, a URI string, or a local name.
+	 * @return A {@link ReferenceType} object corresponding to the input string, or {@code null} if
+	 *         the string is not a valid reference type.
+	 * @throws InvalidSPDXAnalysisException If there is an error creating the {@link ReferenceType}
+	 *         object.
 	 */
 	protected ReferenceType stringToRefType(String refTypeStr) {
 		ReferenceType refType = null;

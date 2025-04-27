@@ -62,11 +62,13 @@ public class AnnotationsSheet extends AbstractSheet {
 
 
 	/**
-	 * @param workbook Workbook for the sheet
-	 * @param annotationsSheetName
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
+	 * Create an AnnotationsSheet instance
+	 *
+	 * @param workbook The Workbook object where the annotations sheet resides.
+	 * @param annotationsSheetName The name of the annotations sheet within the workbook.
+	 * @param modelStore The model store used for creating and managing SPDX objects.
+	 * @param documentUri The URI of the SPDX document associated with this sheet.
+	 * @param copyManager The copy manager used for handling SPDX object copies.
 	 */
 	public AnnotationsSheet(Workbook workbook, String annotationsSheetName, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
@@ -181,7 +183,13 @@ public class AnnotationsSheet extends AbstractSheet {
 			throw new SpreadsheetException("Error getting annotation",e);
 		}
 	}
-	
+
+	/**
+	 * Retrieve the SPDX element ID for the specified row
+	 *
+	 * @param rowNum The row number to retrieve the element ID from.
+	 * @return The SPDX element ID as a string, or {@code null} if the row does not exist.
+	 */
 	public String getElmementId(int rowNum) {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
@@ -189,6 +197,14 @@ public class AnnotationsSheet extends AbstractSheet {
 		}
 		return row.getCell(ID_COL).getStringCellValue();
 	}
+
+	/**
+	 * Retrieve an Annotation object from the specified row
+	 *
+	 * @param rowNum The row number to retrieve the annotation from.
+	 * @return The Annotation object populated with the data from the specified row.
+	 * @throws SpreadsheetException If the row is missing, contains invalid data, or required fields are empty.
+	 */
 	public Annotation getAnnotation(int rowNum) throws SpreadsheetException {
 		Row row = sheet.getRow(rowNum);
 		if (row == null) {
