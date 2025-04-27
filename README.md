@@ -1,5 +1,7 @@
 # spdx-java-spreadsheet-store
 
+[![javadoc](https://javadoc.io/badge2/org.spdx/spdx-spreadsheet-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-spreadsheet-store)
+
 Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.
 
 This store supports serializing and deserializing files in XLS and XLSX spreadsheet formats.
@@ -20,6 +22,11 @@ Create an instance of `SpreadsheetStore(IModelStore baseStore, SpreadsheetFormat
 ## Serializing and Deserializing
 
 This library supports the `ISerializableModelStore` interface for serializing and deserializing files based on the format specified.
+
+## API Documentation
+
+- [Released API documentation](https://www.javadoc.io/doc/org.spdx/spdx-spreadsheet-store) (as released on Maven Central)
+- [Development API documentation](https://spdx.github.io/spdx-java-spreadsheet-store/) (updated with each GitHub change)
 
 ## Development Status
 
