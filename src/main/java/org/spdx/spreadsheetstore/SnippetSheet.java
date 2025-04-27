@@ -57,6 +57,8 @@ import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 
 /**
+ * Represents a sheet that stores information about SPDX snippets
+ *
  * @author Gary O'Neall
  */
 public class SnippetSheet extends AbstractSheet {
@@ -95,11 +97,13 @@ public class SnippetSheet extends AbstractSheet {
 	Map<String, SpdxSnippet> snippetCache = new HashMap<>();
 
 	/**
-	 * @param workbook
-	 * @param snippetSheetName
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
+	 * Construct a new SnippetSheet instance
+	 *
+	 * @param workbook The Workbook object.
+	 * @param snippetSheetName The name of the sheet within the workbook where snippet data is stored.
+	 * @param modelStore The model store used to manage SPDX objects.
+	 * @param documentUri The URI of the SPDX document associated with this sheet.
+	 * @param copyManager The copy manager used for handling SPDX object copies.
 	 */
 	public SnippetSheet(Workbook workbook, String snippetSheetName, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
@@ -148,8 +152,10 @@ public class SnippetSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param row
-	 * @return
+	 * Validate the row
+	 *
+	 * @param row The row to validate.
+	 * @return {@code null} if the row is valid, otherwise a string describing the validation error.
 	 */
 	private String validateRow(Row row) {
 		for (int i = 0; i < NUM_COLS; i++) {
@@ -191,6 +197,17 @@ public class SnippetSheet extends AbstractSheet {
 		return null;
 	}
 
+	/**
+	 * Create a sheet in the given workbook
+	 *
+	 * Create a new sheet in the given workbook with the specified name.
+	 *
+	 * If a sheet with the given name already exists, it will be removed
+	 * and replaced with a new one.
+	 * 
+	 * @param wb The Workbook object where the sheet will be created.
+	 * @param sheetName The name of the sheet to be created.
+	 */
 	public static void create(Workbook wb, String sheetName) {
 		int sheetNum = wb.getSheetIndex(sheetName);
 		if (sheetNum >= 0) {
@@ -215,6 +232,8 @@ public class SnippetSheet extends AbstractSheet {
 	}
 	
 	/**
+	 * Add an SPDX snippet to the spreadsheet
+	 *
 	 * @param snippet
 	 * @throws SpreadsheetException 
 	 */
@@ -323,9 +342,11 @@ public class SnippetSheet extends AbstractSheet {
 	}
 
 	/**
-	 * Get the SPDX snippet represented in the row rownum.
+	 * Get the SPDX snippet represented in the specified row
+	 *
 	 * IMPORTANT: The Snippet From File must already be in the model store.
 	 * The ID from the Snippet From File can be obtained through the <code> getSnippetFileId(int rowNum)</code> method
+	 *
 	 * @param rowNum
 	 * @return Snippet at the row rowNum or null if the row does not exist
 	 * @throws SpreadsheetException 
@@ -488,8 +509,9 @@ public class SnippetSheet extends AbstractSheet {
 
 	/**
 	 * Get the SpdxFromFileSNippet for the given row
+	 *
 	 * @param rowNum
-	 * @return
+	 * @return The ID of the "Snippet From File" for the specified row, or {@code null} if the row does not exist.
 	 * @throws SpreadsheetException 
 	 */
 	public String getSnippetFileId(int rowNum) throws SpreadsheetException {

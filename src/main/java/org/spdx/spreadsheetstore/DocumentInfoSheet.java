@@ -56,7 +56,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param wb Workbook
+	 * Construct a DocumentInfoSheet in the given workbook
+	 *
+	 * @param wb The Workbook object where the sheet will be created
 	 * @param sheetName Sheet name
 	 * @param documentUri Document URI
 	 */
@@ -67,13 +69,14 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 
 	/**
 	 * Open an existing worksheet
-	 * @param workbook
-	 * @param originSheetName
+	 *
+	 * @param workbook Workbook object containing the sheet.
+	 * @param originSheetName Name of the sheet to be opened.
 	 * @param version Spreadsheet version
-	 * @param modelStore model store for the SPDX document
-	 * @param copyManager 
-	 * @return
-	 * @throws SpreadsheetException 
+	 * @param modelStore Model store for the SPDX document
+	 * @param copyManager The copy manager used for handling SPDX object copies.
+	 * @return An instance of {@link DocumentInfoSheet} corresponding to the specified version.
+	 * @throws SpreadsheetException If the sheet cannot be opened or the version is unsupported.
 	 */
 	public static DocumentInfoSheet openVersion(Workbook workbook,
 			String originSheetName, String version, IModelStore modelStore, 
@@ -139,121 +142,169 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param spdxVersion
+	 * Se the SPDX specification version for the SPDX document
+	 *
+	 * @param spdxVersion SPDX specification version
 	 */
 	public abstract void setSPDXVersion(String spdxVersion);
 
 	/**
-	 * @param createdBys
+	 * Set the list of creators of the SPDX document
+	 *
+	 * @param createdBys List of creators
 	 */
 	public abstract void setCreatedBy(Collection<String> createdBys);
 
 	/**
-	 * @param licenseId
+	 * Set the license for the SPDX document
+	 *
+	 * @param licenseId License ID
 	 */
 	public abstract void setDataLicense(String licenseId);
 
 	/**
-	 * @param comments
+	 * Set the author comments for the SPDX document
+	 *
+	 * @param comments Author comments
 	 */
 	public abstract void setAuthorComments(String comments);
 
 	/**
-	 * @param createdDate
+	 * Set the created date for the SPDX document
+	 *
+	 * @param createdDate Created date
 	 */
 	public abstract void setCreated(Date createdDate);
 
 	/**
-	 * @return
+	 * Retrieve the creation date of the SPDX document
+	 *
+	 * @return Date the SPDX document was created
 	 */
 	public abstract Date getCreated();
 
 	/**
-	 * @return
+	 * Retrieve the list of creators of the SPDX document
+	 *
+	 * @return List of creators
 	 */
 	public abstract List<String> getCreatedBy();
 
 	/**
-	 * @return
+	 * Retrieve the author comments for the SPDX document
+	 *
+	 * @return Author comments
 	 */
 	public abstract String getAuthorComments();
 
 	/**
-	 * @return
+	 * Retrieve the SPDX specification version of the SPDX document
+	 *
+	 * @return SPDX specification version
 	 */
 	public abstract String getSPDXVersion();
 
 	/**
-	 * @return
+	 * Retrieve the license for the SPDX document
+	 *
+	 * @return License ID
 	 */
 	public abstract String getDataLicense();
 
 	/**
-	 * @return
+	 * Retrieve the document comment for the SPDX document
+	 *
+	 * @return Document comment
 	 */
 	public abstract String getDocumentComment();
 
 	/**
-	 * @param docComment
+	 * Set the document comment for the SPDX document
+	 *
+	 * @param docComment Document comment
 	 */
 	public abstract void setDocumentComment(String docComment);
 	
 	/**
-	 * @return
+	 * Retrieve the license list version for the SPDX document
+	 *
+	 * @return License list version
 	 */
 	public abstract String getLicenseListVersion();
 	
 	/**
-	 * @param licenseVersion
+	 * Set the license list version for the SPDX document
+	 *
+	 * @param licenseVersion License list version
 	 */
 	public abstract void setLicenseListVersion(String licenseVersion);
 
 	/**
-	 * @return
+	 * Retrieve the namespace for the SPDX document
+	 *
+	 * @return Namespace
 	 */
 	public abstract String getNamespace();
 
 	/**
 	 * Add all origin information from the document
-	 * @param doc
+	 *
+	 * @param doc SPDX document to add
 	 * @throws SpreadsheetException 
 	 */
 	public abstract void addDocument(SpdxDocument doc) throws SpreadsheetException;
 	
 	/**
-	 * @return SPDX Identifier for the document
+	 * Retrieve the SPDX identifier for the SPDX document
+	 *
+	 * @return SPDX identifier for the document
 	 */
 	public abstract String getSpdxId();
+
 	/**
-	 * Set the SPDX identified for the document
-	 * @param id
+	 * Set the SPDX identifier for the document
+	 *
+	 * @param id SPDX identifier
 	 */
 	public abstract void setSpdxId(String id);
+
 	/**
+	 * Retrieve the document name
+	 *
 	 * @return Document name
 	 */
 	public abstract String getDocumentName();
+
 	/**
 	 * Set the document name
-	 * @param documentName
+	 *
+	 * @param documentName Document name
 	 */
 	public abstract void setDocumentName(String documentName);
+
 	/**
 	 * @return SPDX ID's for content described by this SPDX document
 	 */
 	public abstract Collection<String> getDocumentContents();
+
 	/**
 	 * Set the SPDX ID's for content described by this SPDX document
-	 * @param contents
+	 *
+	 * @param contents SPDX ID's for content described by this SPDX document
 	 */
 	public abstract void setDocumentDescribes(Collection<String> contents);
+
 	/**
+	 * Retrieve the external document refs
+	 *
 	 * @return External document refs
 	 * @throws SpreadsheetException 
 	 */
 	public abstract Collection<ExternalDocumentRef> getExternalDocumentRefs() throws SpreadsheetException;
+
 	/**
 	 * Set the external document refs
+	 *
 	 * @param externalDocumentRefs
 	 * @throws SpreadsheetException 
 	 */

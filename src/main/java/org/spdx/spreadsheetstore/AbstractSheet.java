@@ -63,8 +63,8 @@ import com.opencsv.exceptions.CsvValidationException;
 
 /**
  * Abstract class representing a workbook sheet used in storing structured data
- * @author Gary O'Neall
  *
+ * @author Gary O'Neall
  */
 public abstract class AbstractSheet {
 	
@@ -104,11 +104,13 @@ public abstract class AbstractSheet {
 	protected ModelCopyManager copyManager;
 
 	/**
+	 * Construct an AbstractSheet instance
+	 *
 	 * @param workbook Workbook where the sheet lives
 	 * @param sheetName Name of the sheet
 	 * @param modelStore Model store for creating typed values
 	 * @param documentUri URI for the document if known
-	 * @param copyManager 
+	 * @param copyManager The copy manager used for handling SPDX object copies.
 	 */
 	public AbstractSheet(Workbook workbook, String sheetName, IModelStore modelStore, 
 			@Nullable String documentUri, ModelCopyManager copyManager) {
@@ -139,7 +141,9 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * create the styles in the workbook
+	 * Create the styles in the workbook
+	 *
+	 * @param wb The Workbook object where the styles will be created.
 	 */
 	private void createStyles(Workbook wb) {
 		// create the styles
@@ -200,6 +204,7 @@ public abstract class AbstractSheet {
 	
 	/**
 	 * Add a new row to the end of the sheet
+	 *
 	 * @return new row
 	 */
 	protected Row addRow() {
@@ -328,6 +333,7 @@ public abstract class AbstractSheet {
 	
 	/**
 	 * Create a string from a collection of checksums
+	 *
 	 * @param checksumCollection collection of checksums
 	 * @return string representation of the checksum
 	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
@@ -349,8 +355,10 @@ public abstract class AbstractSheet {
 	
 
 	/**
-	 * @param checksum
-	 * @return
+	 * Convert a Checksum object into its string representation
+	 *
+	 * @param checksum Checksum object
+	 * @return string representation of the checksum
 	 * @throws InvalidSPDXAnalysisException 
 	 */
 	public String checksumToString(Checksum checksum) throws InvalidSPDXAnalysisException {
@@ -364,9 +372,11 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * @param checksumsString
-	 * @return
-	 * @throws InvalidSPDXAnalysisException 
+	 * Convert a string representation of checksums into a collection of Checksum objects
+	 *
+	 * @param checksumsString String representation of the checksums
+	 * @return Collection of Checksum objects
+	 * @throws SpreadsheetException on errors parsing the checksum string
 	 */
 	public Collection<Checksum> strToChecksums(String checksumsString) throws SpreadsheetException {
 		if (checksumsString == null || checksumsString.trim().isEmpty()) {
@@ -382,9 +392,11 @@ public abstract class AbstractSheet {
 	
 	/**
 	 * Creates a Checksum from the parameters specified in the tag value
-	 * @param value checksum string formatted with the algorithm
-	 * @return Checksum
-	 * @throws SpreadsheetException on errors parsing the checksum
+	 *
+	 * @param value A checksum string, formatted with the algorithm.
+	 * @return A {@link Checksum} object created from the input string.
+	 * @throws SpreadsheetException on errors parsing the checksum.
+	 * @throws InvalidSPDXAnalysisException on errors creating the {@link Checksum} object.
 	 */
 	public Checksum parseChecksum(String value) throws SpreadsheetException {
 		Matcher matcher = CHECKSUM_PATTERN.matcher(value.trim());
@@ -408,9 +420,10 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * converts an array of strings to a comma separated list
-	 * @param strings
-	 * @return
+	 * Convert a collection of strings to a comma-separated value string
+	 *
+	 * @param strings A collection of strings to be converted into a CSV string.
+	 * @return A CSV-formatted string representing the input collection, or an error message if parsing fails.
 	 */
 	public static String stringsToCsv(Collection<String> strings) {
 		StringWriter writer = new StringWriter();
@@ -433,9 +446,11 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * Converts a comma separated CSV string to an array of strings
-	 * @param csv
-	 * @return
+	 * Converts a comma-separated value (CSV) string into a list of strings
+	 *
+	 * @param csv A string containing comma-separated values.
+	 * @return A list of strings representing the parsed values from the CSV string. If an error
+	 *         occurs, the list contains a single error message.
 	 */
 	public static List<String> csvToStrings(String csv) {
 		StringReader reader = new StringReader(csv);
@@ -457,6 +472,12 @@ public abstract class AbstractSheet {
 		}
 	}
 	
+	/**
+	 * Convert a collection of {@link AnyLicenseInfo} objects into a CSV string representation
+	 *
+	 * @param licenseCollection A collection of {@link AnyLicenseInfo} objects to be converted.
+	 * @return A comma-separated string representation of the licenses, or an empty string if the collection is null or empty.
+	 */
 	public static String licensesToString(Collection<AnyLicenseInfo> licenseCollection) {
 		if (licenseCollection == null || licenseCollection.isEmpty()) {
 			return "";
