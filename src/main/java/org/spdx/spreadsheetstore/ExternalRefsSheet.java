@@ -205,7 +205,6 @@ public class ExternalRefsSheet extends AbstractSheet {
 	 *
 	 * @param referenceType
 	 * @return
-	 * @throws InvalidSPDXAnalysisException 
 	 */
 	protected String refTypeToString(ReferenceType referenceType) {
 		String retval;
@@ -294,8 +293,6 @@ public class ExternalRefsSheet extends AbstractSheet {
 	 *        name, a URI string, or a local name.
 	 * @return A {@link ReferenceType} object corresponding to the input string, or {@code null} if
 	 *         the string is not a valid reference type.
-	 * @throws InvalidSPDXAnalysisException If there is an error creating the {@link ReferenceType}
-	 *         object.
 	 */
 	protected ReferenceType stringToRefType(String refTypeStr) {
 		ReferenceType refType = null;

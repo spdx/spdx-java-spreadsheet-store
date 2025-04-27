@@ -396,7 +396,6 @@ public abstract class AbstractSheet {
 	 * @param value A checksum string, formatted with the algorithm.
 	 * @return A {@link Checksum} object created from the input string.
 	 * @throws SpreadsheetException on errors parsing the checksum.
-	 * @throws InvalidSPDXAnalysisException on errors creating the {@link Checksum} object.
 	 */
 	public Checksum parseChecksum(String value) throws SpreadsheetException {
 		Matcher matcher = CHECKSUM_PATTERN.matcher(value.trim());
