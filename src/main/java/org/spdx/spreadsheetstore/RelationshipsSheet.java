@@ -61,11 +61,13 @@ public class RelationshipsSheet extends AbstractSheet {
 
 
 	/**
-	 * @param workbook
-	 * @param sheetName
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
+	 * Construct a RelationshipsSheet
+	 *
+	 * @param workbook Workbook containing the sheet.
+	 * @param sheetName Name of the sheet.
+	 * @param modelStore Model store for SPDX objects.
+	 * @param documentUri URI of the SPDX document.
+	 * @param copyManager Copy manager for SPDX objects.
 	 */
 	public RelationshipsSheet(Workbook workbook, String sheetName, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {

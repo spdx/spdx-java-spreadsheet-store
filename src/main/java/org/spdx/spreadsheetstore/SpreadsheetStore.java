@@ -77,17 +77,20 @@ import org.spdx.storage.simple.ExtendedSpdxStore;
 public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializableModelStore {
 	
 	static final Logger logger = LoggerFactory.getLogger(SpreadsheetStore.class);
-	
+
+	/**
+	 * Enum for the spreadsheet format type
+	 */
 	public enum SpreadsheetFormatType {XLS, XLSX};
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
-	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>(){
-	    @Override
-	    protected DateFormat initialValue() {
-	        return new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
-	    }
-	  };
+	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>() {
+		@Override
+		protected DateFormat initialValue() {
+			return new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
+		}
+	};
 
 	/**
 	 * Constructs an SPDX model store which serializes and deserializes to
@@ -102,7 +105,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	/**
-	 * Constructs an SPDX model store which serializes and deserializes to
+	 * Construct an SPDX model store which serializes and deserializes to
 	 * Microsoft Excel Workbooks
 	 *
 	 * @param baseStore SPDX model store for deserialization/serialization
@@ -115,9 +118,18 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		serialize(stream, null);
 	}
-	
+
+	/**
+	 * Serialize the SPDX model to an output stream
+	 *
+	 * @param stream Output stream to write the serialized data.
+	 * @param modelObject Optional SPDX document to serialize. If null, the default document is used.
+	 * @throws InvalidSPDXAnalysisException If the model is invalid or unsupported.
+	 * @throws IOException If an I/O error occurs.
+	 */
 	@Override
-	public void serialize(OutputStream stream, @Nullable CoreModelObject modelObject) throws InvalidSPDXAnalysisException, IOException {
+	public void serialize(OutputStream stream, @Nullable CoreModelObject modelObject)
+			throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
 		SpdxDocument doc = null;
 		if (Objects.nonNull(modelObject)) {
@@ -160,10 +172,11 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 	
 	/**
-	 * Copy the annotations ot the annotationsSheet
-	 * @param allAnnotations
-	 * @param annotationsSheet
-	 * @throws SpreadsheetException 
+	 * Copy annotations to the annotationsSheet
+	 *
+	 * @param allAnnotations Map of element IDs to their annotations.
+	 * @param annotationsSheet Sheet to store the annotations.
+	 * @throws SpreadsheetException If an error occurs while adding annotations.
 	 */
 	private void copyAnnotationsToSS(Map<String, Collection<Annotation>> allAnnotations,
 			AnnotationsSheet annotationsSheet) throws SpreadsheetException {
@@ -178,9 +191,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy relationships to the relationshipsSheet
-	 * @param allRelationships
-	 * @param relationshipsSheet
-	 * @throws SpreadsheetException 
+	 *
+	 * @param allRelationships Map of element IDs to their relationships.
+	 * @param relationshipsSheet Sheet to store the relationships.
+	 * @throws SpreadsheetException If an error occurs while adding relationships.
 	 */
 	private void copyRelationshipsToSS(Map<String, Collection<Relationship>> allRelationships,
 			RelationshipsSheet relationshipsSheet) throws SpreadsheetException {
@@ -194,15 +208,18 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * Copy the snippet information to the snippetSheet and add relationships and annotations to their respective maps
-	 * @param documentUri
-	 * @param copyManager
-	 * @param snippetSheet
-	 * @param allRelationships
-	 * @param allAnnotations
-	 * @throws InvalidSPDXAnalysisException
+	 * Copy the snippet information to the snippetSheet and add relationships
+	 * and annotations to their respective maps
+	 *
+	 * @param documentUri Document URI for the snippets.
+	 * @param copyManager Copy manager for SPDX objects.
+	 * @param snippetSheet Sheet to store snippet information.
+	 * @param allRelationships Map to store relationships.
+	 * @param allAnnotations Map to store annotations.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing snippets.
 	 */
-	private void copySnippetInfoToSS(String documentUri, ModelCopyManager copyManager, SnippetSheet snippetSheet,
+	private void copySnippetInfoToSS(String documentUri, ModelCopyManager copyManager,
+			SnippetSheet snippetSheet,
 			Map<String, Collection<Relationship>> allRelationships,
 			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
 	    List<SpdxSnippet> snippets;
@@ -227,17 +244,20 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * Copy the file information to the perFileSheet and add relationships and annotations to their respective maps
-	 * @param documentUri
-	 * @param copyManager
-	 * @param perFileSheet
-	 * @param fileIdToPackageId
-	 * @param allRelationships
-	 * @param allAnnotations
-	 * @throws InvalidSPDXAnalysisException
+	 * Copy the file information to the perFileSheet and add relationships
+	 * and annotations to their respective maps
+	 *
+	 * @param documentUri Document URI for the files.
+	 * @param copyManager Copy manager for SPDX objects.
+	 * @param perFileSheet Sheet to store file information.
+	 * @param fileIdToPackageId Map of file IDs to package IDs.
+	 * @param allRelationships Map to store relationships.
+	 * @param allAnnotations Map to store annotations.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing files.
 	 */
-	private void copyPerFileInfoToSS(String documentUri, ModelCopyManager copyManager, PerFileSheet perFileSheet,
-			Map<String, String> fileIdToPackageId, Map<String, Collection<Relationship>> allRelationships,
+	private void copyPerFileInfoToSS(String documentUri, ModelCopyManager copyManager,
+			PerFileSheet perFileSheet, Map<String, String> fileIdToPackageId,
+			Map<String, Collection<Relationship>> allRelationships,
 			Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
 	    List<SpdxFile> files;
 	    try(
@@ -262,9 +282,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy extractedLicenseInfos to the extractedLicenseInfoSheet
-	 * @param extractedLicenseInfos
-	 * @param extractedLicenseInfoSheet
-	 * @throws InvalidSPDXAnalysisException
+	 *
+	 * @param extractedLicenseInfos Collection of extracted license information.
+	 * @param extractedLicenseInfoSheet Sheet to store the extracted license information.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing licenses.
 	 */
 	private void copyExtractedLicenseInfosToSS(Collection<ExtractedLicenseInfo> extractedLicenseInfos,
 			ExtractedLicenseInfoSheet extractedLicenseInfoSheet) throws InvalidSPDXAnalysisException {
@@ -304,9 +325,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy the external references to the externalRefSheet
-	 * @param externalRefsMap map of package ID to collection of external refs
-	 * @param externalRefSheet
-	 * @throws SpreadsheetException
+	 *
+	 * @param externalRefsMap Map of package IDs to collections of external references.
+	 * @param externalRefSheet Sheet to store the external references.
+	 * @throws SpreadsheetException If an error occurs while adding external references.
 	 */
 	private void copyExternalRefsToSS(Map<String, Collection<ExternalRef>> externalRefsMap,
 			ExternalRefsSheet externalRefSheet) throws SpreadsheetException {
@@ -320,18 +342,23 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * Copy package information from this store into the packageInfoSheet and update the externalRefs, allRelationships, and allAnnotations with collections from the packages
-	 * @param documentUri document URI for the document containing the packages
-	 * @param packageInfoSheet
-	 * @param copyManager
-	 * @param externalRefs output parameters of external references
-	 * @param allAnnotations 
-	 * @param allRelationships 
-	 * @return map of file IDs to package ID of the package containing the file
-	 * @throws InvalidSPDXAnalysisException
+	 * Copy package information from this store into the packageInfoSheet
+	 * and update the externalRefs, allRelationships, and allAnnotations
+	 * with collections from the packages
+	 *
+	 * @param documentUri Document URI for the document containing the packages.
+	 * @param packageInfoSheet Sheet to store package information.
+	 * @param copyManager Copy manager for SPDX objects.
+	 * @param externalRefs Map to store external references.
+	 * @param allRelationships Map to store relationships.
+	 * @param allAnnotations Map to store annotations.
+	 * @return Map of file IDs to package ID of the package containing the file.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing packages.
 	 */
-	private Map<String, String> copyPackageInfoToSS(String documentUri, PackageInfoSheet packageInfoSheet,
-			ModelCopyManager copyManager, Map<String, Collection<ExternalRef>> externalRefs, Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
+	private Map<String, String> copyPackageInfoToSS(String documentUri,
+			PackageInfoSheet packageInfoSheet, ModelCopyManager copyManager,
+			Map<String, Collection<ExternalRef>> externalRefs,
+			Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
 		Map<String, String> fileIdToPkgId = new HashMap<>();
 		List<SpdxPackage> packages;
 		
@@ -370,9 +397,19 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		}
 		return fileIdToPkgId;
 	}
-	
+
+	/**
+	 * Deserialize an SPDX document from an input stream
+	 *
+	 * @param stream Input stream containing the serialized SPDX document.
+	 * @param overwrite Whether to overwrite an existing document in the store.
+	 * @return The deserialized {@link SpdxDocument}.
+	 * @throws InvalidSPDXAnalysisException If the document is invalid or unsupported.
+	 * @throws IOException If an I/O error occurs.
+	 */
 	@Override
-	public SpdxDocument deSerialize(InputStream stream, boolean overwrite) throws InvalidSPDXAnalysisException, IOException {
+	public SpdxDocument deSerialize(InputStream stream, boolean overwrite)
+			throws InvalidSPDXAnalysisException, IOException {
 		ModelCopyManager copyManager = new ModelCopyManager();
 		SpdxSpreadsheet ss = new SpdxSpreadsheet(stream, this, copyManager);
 		if (this.exists(ss.getDocumentUri() + "#" + SpdxConstantsCompatV2.SPDX_DOCUMENT_ID)) {
@@ -399,13 +436,16 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	}
 
 	/**
-	 * Add any missing package contains file relationships based on the package ID column in the files
-	 * sheet.  Note that these should already have been added as relationships.
-	 * @param perFileSheet file spreadsheet
-	 * @param pkgIdToPackage map of Package ID to package
-	 * @param fileIdToFile map of file ID to file
-	 * @param packageContainsFileIds map of package ID to list of file IDs that have a contains relationship
-	 * @throws InvalidSPDXAnalysisException 
+	 * Add any missing "package contains file" relationships
+	 * based on the package ID column in the files sheet.
+	 *
+	 * Note that these should already have been added as relationships.
+	 *
+	 * @param perFileSheet File spreadsheet.
+	 * @param pkgIdToPackage Map of package IDs to packages.
+	 * @param fileIdToFile Map of file IDs to files.
+	 * @param packageContainsFileIds Map of package IDs to file IDs which have a "contains" relationship to the package.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while adding relationships.
 	 */
 	private void copyAnyMissingFileContains(PerFileSheet perFileSheet,
 			Map<String, SpdxPackage> pkgIdToPackage,
@@ -437,13 +477,15 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy the extracted information from the extractedLicenseInfoSheet to document
-	 * @param extractedLicenseInfoSheet
-	 * @param document
-	 * @param documentUri
-	 * @param copyManager
-	 * @throws InvalidSPDXAnalysisException
-	 */
-	private void copyExtractedLicenseInfosFromSS(ExtractedLicenseInfoSheet extractedLicenseInfoSheet, SpdxDocument document,
+	 *
+	* @param extractedLicenseInfoSheet Sheet containing extracted license information.
+	* @param document SPDX document to update.
+	* @param documentUri Document URI for the SPDX document.
+	* @param copyManager Copy manager for SPDX objects.
+	* @throws InvalidSPDXAnalysisException If an error occurs while processing licenses.
+	*/
+	private void copyExtractedLicenseInfosFromSS(
+			ExtractedLicenseInfoSheet extractedLicenseInfoSheet, SpdxDocument document,
 			String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		int numNonStdLicenses = extractedLicenseInfoSheet.getNumDataRows();
 		int firstRow = extractedLicenseInfoSheet.getFirstDataRow();
@@ -460,13 +502,15 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy document information from the documentInfoSheet to the document
-	 * @param documentInfoSheet
-	 * @param document
-	 * @param documentUri
-	 * @param copyManager
-	 * @throws InvalidSPDXAnalysisException
+	 *
+	 * @param documentInfoSheet Sheet containing document information.
+	 * @param document SPDX document to update.
+	 * @param documentUri Document URI for the SPDX document.
+	 * @param copyManager Copy manager for SPDX objects.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing document information.
 	 */
-	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document, String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
+	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document,
+			String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		Date createdDate = documentInfoSheet.getCreated();
 		String created  = FORMAT.get().format(createdDate);
 		List<String> createdBys = documentInfoSheet.getCreatedBy();
@@ -517,12 +561,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	/**
 	 * Copy package information from the packageInfoSheet to the document
-	 * @param packageInfoSheet
-	 * @param externalRefsSheet
-	 * @param analysis
-	 * @return map of ID's to SPDX packages
-	 * @throws SpreadsheetException
-	 * @throws InvalidSPDXAnalysisException
+	 *
+	 * @param packageInfoSheet Sheet containing package information.
+	 * @param externalRefsSheet Sheet containing external references.
+	 * @param analysis SPDX document to update.
+	 * @return Map of package IDs to SPDX packages.
+	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
+	 * @throws InvalidSPDXAnalysisException If the package information is invalid.
 	 */
 	private Map<String, SpdxPackage> copyPackageInfoFromSS(PackageInfoSheet packageInfoSheet,
 			ExternalRefsSheet externalRefsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
@@ -539,12 +584,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	/**
 	 * Copy the file level information
-	 * @param perFileSheet
-	 * @param analysis
-	 * @param pkgIdToPackage
-	 * @return map of file ID's to SpdxFiles
-	 * @throws SpreadsheetException
-	 * @throws InvalidSPDXAnalysisException
+	 *
+	 * @param perFileSheet Sheet containing file information.
+	 * @param analysis SPDX document to update.
+	 * @param pkgIdToPackage Map of package IDs to SPDX packages.
+	 * @return Map of file IDs to SPDX files.
+	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
+	 * @throws InvalidSPDXAnalysisException If the file information is invalid.
 	 */
 	private Map<String, SpdxFile> copyPerFileInfoFromSS(PerFileSheet perFileSheet,
 			SpdxDocument analysis, Map<String, SpdxPackage> pkgIdToPackage) throws SpreadsheetException, InvalidSPDXAnalysisException {
@@ -560,11 +606,12 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	/**
 	 * Copy snippet information from the spreadsheet to the analysis document
-	 * @param snippetSheet
-	 * @param analysis
-	 * @param fileIdToFile
-	 * @throws InvalidSPDXAnalysisException 
-	 * @throws SpreadsheetException 
+	 *
+	 * @param snippetSheet Sheet containing snippet information.
+	 * @param analysis SPDX document to update.
+	 * @param fileIdToFile Map of file IDs to SPDX files.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing snippets.
+	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
 	 */
 	private void copyPerSnippetInfoFromSS(SnippetSheet snippetSheet,
 			SpdxDocument analysis, Map<String, SpdxFile> fileIdToFile) throws InvalidSPDXAnalysisException, SpreadsheetException {
@@ -577,11 +624,12 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	
 	/**
 	 * Copy the relationships into the model store
-	 * @param relationshipsSheet
-	 * @param analysis
-	 * @return map of package IDs to file IDs which have a contains relationship to the package
-	 * @throws SpreadsheetException 
-	 * @throws InvalidSPDXAnalysisException 
+	 *
+	 * @param relationshipsSheet Sheet containing relationship information.
+	 * @param analysis SPDX document to update.
+	 * @return Map of package IDs to file IDs which have a "contains" relationship to the package.
+	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
+	 * @throws InvalidSPDXAnalysisException If the relationship information is invalid.
 	 */
 	private Map<String, List<String>> copyRelationshipInfoFromSS(
 			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
@@ -626,10 +674,11 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Copy the annotation information into the model store
-	 * @param annotationsSheet
-	 * @param analysis
-	 * @throws InvalidSPDXAnalysisException 
-	 * @throws SpreadsheetException 
+	 *
+	 * @param annotationsSheet Sheet containing annotation information.
+	 * @param analysis SPDX document to update.
+	 * @throws InvalidSPDXAnalysisException If an error occurs while processing annotations.
+	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
 	 */
 	private void copyAnnotationInfoFromSS(AnnotationsSheet annotationsSheet,
 			SpdxDocument analysis) throws InvalidSPDXAnalysisException, SpreadsheetException {
@@ -652,7 +701,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		}
 	}
 	
+	/**
+	 * Unload the spreadsheet store
+	 */
 	public void unload() {
-	    FORMAT.remove();
+	    FORMAT.remove();  // Release the thread-local DateFormat instance
 	}
 }

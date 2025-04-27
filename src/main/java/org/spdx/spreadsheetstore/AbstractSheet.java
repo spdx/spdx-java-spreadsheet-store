@@ -78,7 +78,10 @@ public abstract class AbstractSheet {
 			.withQuoteChar(CSV_QUOTING_CHAR)
 			.withSeparator(CSV_SEPARATOR_CHAR)
 			.build();
-	
+
+	/**
+	 * Pattern for parsing checksums
+	 */
 	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+):\\s+(\\S+)");
 	
 	// Default style for cells
@@ -223,21 +226,47 @@ public abstract class AbstractSheet {
 		}
 		lastRowNum = firstRowNum;
 	}	
-	
+
+	/**
+	 * Return the first row number of the data rows
+	 *
+	 * @return First data row number
+	 */
 	public int getFirstDataRow() {
 		return this.firstRowNum + 1;
 	}
-	
+
+	/**
+	 * Return the number of data rows in the sheet
+	 *
+	 * @return Number of data rows.
+	 */
 	public int getNumDataRows() {
 		return this.lastRowNum - (this.firstRowNum);
 	}
-	
+
+	/**
+	 * Return the sheet managed by this class
+	 *
+	 * @return The {@link Sheet} object.
+	 */
 	public Sheet getSheet() {
 		return this.sheet;
 	}
-	
+
+	/**
+	 * Verifies the integrity of the sheet's data
+	 *
+	 * @return A string describing any issues, or an empty string if valid.
+	 */
 	public abstract String verify();
 
+	/**
+	 * Creates a header cell style for the workbook
+	 *
+	 * @param wb Workbook where the style will be created.
+	 * @return A {@link CellStyle} for header cells.
+	 */
 	public static CellStyle createHeaderStyle(Workbook wb) {
 		CellStyle headerStyle = wb.createCellStyle();
 		headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
@@ -253,6 +282,12 @@ public abstract class AbstractSheet {
 		return headerStyle;
 	}
 	
+	/**
+	 * Creates a cell style with left alignment and text wrapping
+	 *
+	 * @param wb Workbook where the style will be created.
+	 * @return A {@link CellStyle} with left alignment and wrapping.
+	 */
 	public static CellStyle createLeftWrapStyle(Workbook wb) {
 		CellStyle wrapStyle = wb.createCellStyle();
 		wrapStyle.setWrapText(true);
@@ -261,15 +296,21 @@ public abstract class AbstractSheet {
 		return wrapStyle;
 	}
 	
+	/**
+	 * Creates a cell style with center alignment, without text wrapping
+	 *
+	 * @param wb Workbook where the style will be created.
+	 * @return A {@link CellStyle} with center alignment.
+	 */
 	public static CellStyle createCenterStyle(Workbook wb) {
 		CellStyle centerStyle = wb.createCellStyle();
 		centerStyle.setWrapText(false);
 		centerStyle.setAlignment(HorizontalAlignment.CENTER);
 		return centerStyle;
 	}
-	
+
 	/**
-	 * resize the rows for a best fit.  Will not exceed maximum row height.
+	 * Resize the rows for a best fit.  Will not exceed maximum row height.
 	 */
 	public void resizeRows() {
 		// header row
@@ -298,8 +339,10 @@ public abstract class AbstractSheet {
 	}
 
 	/**
-	 * @param cell
-	 * @return
+	 * Calculates the number of wrapped lines in a cell
+	 *
+	 * @param cell The cell to evaluate.
+	 * @return The number of wrapped lines in the cell.
 	 */
 	private int getNumWrappedLines(Cell cell) {
 		if (cell.getCellType() == CellType.STRING) {
@@ -332,11 +375,11 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * Create a string from a collection of checksums
+	 * Converts a collection of {@link Checksum} objects into a string representation
 	 *
-	 * @param checksumCollection collection of checksums
-	 * @return string representation of the checksum
-	 * @throws InvalidSPDXAnalysisException on SPDX parsing errors
+	 * @param checksumCollection Collection of checksums.
+	 * @return String containing checksums in the format "Algorithm: Value", with each checksum separated by a newline.
+	 * @throws InvalidSPDXAnalysisException If a checksum is invalid.
 	 */
 	public String checksumsToString(Collection<Checksum> checksumCollection) throws InvalidSPDXAnalysisException {
 		if (checksumCollection == null || checksumCollection.size() == 0) {
@@ -355,11 +398,11 @@ public abstract class AbstractSheet {
 	
 
 	/**
-	 * Convert a Checksum object into its string representation
+	 * Convert a {@link Checksum} object into its string representation
 	 *
-	 * @param checksum Checksum object
-	 * @return string representation of the checksum
-	 * @throws InvalidSPDXAnalysisException 
+	 * @param checksum Checksum object.
+	 * @return String representation of the checksum in the format "Algorithm: Value".
+	 * @throws InvalidSPDXAnalysisException If the checksum is invalid.
 	 */
 	public String checksumToString(Checksum checksum) throws InvalidSPDXAnalysisException {
 		if (checksum == null) {
@@ -372,11 +415,11 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * Convert a string representation of checksums into a collection of Checksum objects
+	 * Convert a string representation of checksums into a collection of {@link Checksum} objects
 	 *
-	 * @param checksumsString String representation of the checksums
-	 * @return Collection of Checksum objects
-	 * @throws SpreadsheetException on errors parsing the checksum string
+	 * @param checksumsString String containing checksums, separated by newlines.
+	 * @return Collection of Checksum objects.
+	 * @throws SpreadsheetException If the string is invalid or cannot be parsed.
 	 */
 	public Collection<Checksum> strToChecksums(String checksumsString) throws SpreadsheetException {
 		if (checksumsString == null || checksumsString.trim().isEmpty()) {
@@ -391,11 +434,11 @@ public abstract class AbstractSheet {
 	}
 	
 	/**
-	 * Creates a Checksum from the parameters specified in the tag value
+	 * Creates a {@link Checksum} from the parameters specified in the tag value
 	 *
-	 * @param value A checksum string, formatted with the algorithm.
-	 * @return A {@link Checksum} object created from the input string.
-	 * @throws SpreadsheetException on errors parsing the checksum.
+	 * @param value A checksum string in the format "Algorithm: Value".
+	 * @return A Checksum object created from the input string.
+	 * @throws SpreadsheetException If the string is invalid or parsing fails.
 	 */
 	public Checksum parseChecksum(String value) throws SpreadsheetException {
 		Matcher matcher = CHECKSUM_PATTERN.matcher(value.trim());
