@@ -42,6 +42,17 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 	 * @param documentUri
 	 * @param copyManager
 	 */
+
+	/**
+	 * Create an {@link ExtractedLicenseInfoSheet} instance
+	 * 
+	 * @param workbook Workbook object where the sheet resides.
+	 * @param sheetName Sheet name within the workbook.
+	 * @param version Spreadsheet format version.
+	 * @param modelStore Model store for SPDX objects.
+	 * @param documentUri URI of the SPDX document.
+	 * @param copyManager Copy manager for SPDX object handling.
+	 */
 	public ExtractedLicenseInfoSheet(Workbook workbook, String sheetName, String version, IModelStore modelStore, 
 			String documentUri, ModelCopyManager copyManager) {
 		super(workbook, sheetName, modelStore, documentUri, copyManager);
@@ -51,13 +62,14 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 
 	/**
 	 * Opens an existing extracted license info sheet for a specific version
-	 * @param workbook
-	 * @param packageInfoSheetName
-	 * @param version
-	 * @param modelStore
-	 * @param documentUri
-	 * @param copyManager
-	 * @return
+	 *
+	 * @param workbook Workbook containing the sheet.
+	 * @param packageInfoSheetName Name of the sheet containing package information.
+	 * @param version Spreadsheet format version.
+	 * @param modelStore Model store for SPDX objects.
+	 * @param documentUri URI of the SPDX document.
+	 * @param copyManager Copy manager for SPDX object handling.
+	 * @return An instance of {@link ExtractedLicenseInfoSheet}.
 	 */
 	public static ExtractedLicenseInfoSheet openVersion(Workbook workbook,
 			String packageInfoSheetName, String version, IModelStore modelStore, 
@@ -66,9 +78,12 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 	}
 	
 	/**
-	 * Create a blank worksheet NOTE: Replaces / deletes existing sheet by the same name
-	 * @param wb
-	 * @param nonStandardLicenseSheetName
+	 * Create a blank worksheet
+	 * 
+	 * NOTE: Replaces / deletes existing sheet by the same name
+	 * 
+	 * @param wb Workbook where the sheet will be created.
+	 * @param nonStandardLicenseSheetName Name of the sheet to be created.
 	 */
 	public static void create(Workbook wb, String nonStandardLicenseSheetName) {
 		//NOTE: This needs to be updated to the current version
@@ -78,20 +93,23 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 	
 	/**
 	 * Retrieve the license identifier for a specific row in the spreadsheet
-	 * @param rowNum
-	 * @return
+	 *
+	 * @param rowNum Row number in the sheet.
+	 * @return License identifier.
 	 */
 	public abstract String getIdentifier(int rowNum);
 	
 	/**
 	 * Retrieve the extracted text for a specific row in the spreadsheet
-	 * @param rowNum
-	 * @return
+	 *
+	 * @param rowNum Row number in the sheet.
+	 * @return Extracted license text.
 	 */
 	public abstract String getExtractedText(int rowNum);
 	
 	/**
 	 * Add a new row to the NonStandardLicenses sheet
+	 *
 	 * @param identifier License ID
 	 * @param extractedText Extracted license text
 	 * @param licenseName optional license name
@@ -102,17 +120,26 @@ public abstract class ExtractedLicenseInfoSheet extends AbstractSheet {
 			Collection<String> crossRefUrls, String comment);
 	
 	/**
-	 * @return
+	 * Retrieves the license name for a specific row.
+	 *
+	 * @param rowNum Row number in the sheet.
+	 * @return License name.
 	 */
 	public abstract String getLicenseName(int rowNum);
 
 	/**
-	 * @return
+	 * Retrieves the cross-reference URLs for a specific row.
+	 *
+	 * @param rowNum Row number in the sheet.
+	 * @return A collection of cross-reference URLs.
 	 */
 	public abstract Collection<String> getCrossRefUrls(int rowNum);
 
 	/**
-	 * @return
+	 * Retrieves the comment for a specific row.
+	 *
+	 * @param rowNum Row number in the sheet.
+	 * @return Comment as a string.
 	 */
 	public abstract String getComment(int rowNum);
 

@@ -107,18 +107,36 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 		}
 		return cell;
 	}
-	
+
+	/**
+	 * Set the string value of a data cell
+	 *
+	 * @param colNum Cell column number.
+	 * @param value String value to set.
+	 */
 	protected void setDataCellStringValue(int colNum, String value) {
 		getOrCreateDataCell(colNum).setCellValue(value);
 	}
-	
+
+	/**
+	 * Set the date value of a data cell.
+	 *
+	 * @param colNum Cell column number.
+	 * @param value Date value to set.
+	 */
 	protected void setDataCellDateValue(int colNum, Date value) {
 		Cell cell = getOrCreateDataCell(colNum);
 		cell.setCellValue(value);
 		cell.setCellStyle(dateStyle);
 		
 	}
-	
+
+	/**
+	 * Retrieve the date value of a data cell
+	 *
+	 * @param colNum Cell column number.
+	 * @return Date value of the cell, or null if the cell is empty.
+	 */
 	protected Date getDataCellDateValue(int colNum) {
 		Cell cell = getDataRow().getCell(colNum);
 		if (cell == null) {
@@ -128,6 +146,12 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 		}
 	}
 
+	/**
+	 * Retrieve the string value of a data cell.
+	 *
+	 * @param colNum Cell column number.
+	 * @return String value of the cell, or null if the cell is empty.
+	 */
 	protected String getDataCellStringValue(int colNum) {
 		Cell cell = getDataRow().getCell(colNum);
 		if (cell == null) {
@@ -142,7 +166,7 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * Se the SPDX specification version for the SPDX document
+	 * Set the SPDX specification version for the SPDX document
 	 *
 	 * @param spdxVersion SPDX specification version
 	 */
@@ -283,6 +307,8 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	public abstract void setDocumentName(String documentName);
 
 	/**
+	 * Set SPDX identifier for the document
+	 *
 	 * @return SPDX ID's for content described by this SPDX document
 	 */
 	public abstract Collection<String> getDocumentContents();

@@ -22,8 +22,8 @@ import org.spdx.core.InvalidSPDXAnalysisException;
 
 /**
  * Exceptions related to SPDX Spreadsheets
- * @author Gary O'Neall
  *
+ * @author Gary O'Neall
  */
 public class SpreadsheetException extends InvalidSPDXAnalysisException {
 
@@ -33,32 +33,40 @@ public class SpreadsheetException extends InvalidSPDXAnalysisException {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 * @param message
+	 * Construct a SpreadsheetException with the specified message
+	 *
+	 * @param message The detail message.
 	 */
 	public SpreadsheetException(String message) {
 		super(message);
 	}
 
 	/**
-	 * @param cause
+	 * Construct a SpreadsheetException with the specified cause
+	 *
+	 * @param cause The cause of the exception.
 	 */
 	public SpreadsheetException(Throwable cause) {
 		super(cause);
 	}
 
 	/**
-	 * @param message
-	 * @param cause
+	 * Construct a SpreadsheetException with the specified message and cause
+	 *
+	 * @param message The detail message.
+	 * @param cause The cause of the exception.
 	 */
 	public SpreadsheetException(String message, Throwable cause) {
 		super(message, cause);
 	}
 
 	/**
-	 * @param message
-	 * @param cause
-	 * @param enableSuppression
-	 * @param writableStackTrace
+	 * Construct a SpreadsheetException with the specified details
+	 *
+	 * @param message The detail message.
+	 * @param cause The cause of the exception.
+	 * @param enableSuppression Whether suppression is enabled or disabled.
+	 * @param writableStackTrace Whether the stack trace should be writable.
 	 */
 	public SpreadsheetException(String message, Throwable cause, boolean enableSuppression,
 			boolean writableStackTrace) {

@@ -44,7 +44,6 @@ import org.spdx.storage.IModelStore;
  * Spreadsheet workbook for an SPDX Document
  * 
  * @author Gary O'Neall
- *
  */
 public class SpdxSpreadsheet {
 	
