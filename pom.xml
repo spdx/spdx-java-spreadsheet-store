@@ -50,13 +50,6 @@
 	<name>SPDX</name>
 	<url>http://spdx.org</url>
   </organization>
-  <distributionManagement>
-     <repository>
-        <id>ossrh</id>
-        <name>spdx-spdx-tools</name>
-        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-     </repository>
-  </distributionManagement>
   <profiles>
 	<profile>
 		<id>doclint-java8-disable</id>
@@ -156,7 +149,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>2.0.0</version>
+    	<version>2.0.1</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.poi</groupId>
@@ -186,6 +179,15 @@
 		</testResource>
 	</testResources>
 	<plugins>
+		<plugin>
+			<groupId>org.sonatype.central</groupId>
+			<artifactId>central-publishing-maven-plugin</artifactId>
+			<version>0.7.0</version>
+			<extensions>true</extensions>
+			<configuration>
+				<publishingServerId>central</publishingServerId>
+			</configuration>
+		</plugin>
 	    <plugin>
 	      <groupId>org.apache.maven.plugins</groupId>
 	      <artifactId>maven-release-plugin</artifactId>
