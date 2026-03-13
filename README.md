@@ -1,5 +1,6 @@
 # spdx-java-spreadsheet-store
 
+[![Maven Central Version](https://img.shields.io/maven-central/v/org.spdx/spdx-spreadsheet-store)](https://central.sonatype.com/artifact/org.spdx/spdx-spreadsheet-store)
 [![javadoc](https://javadoc.io/badge2/org.spdx/spdx-spreadsheet-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-spreadsheet-store)
 
 Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.
