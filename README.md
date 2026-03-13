@@ -1,4 +1,4 @@
-# spdx-java-spreadsheet-store
+# SPDX Java Spreadsheet Store
 
 [![Maven Central Version](https://img.shields.io/maven-central/v/org.spdx/spdx-spreadsheet-store)](https://central.sonatype.com/artifact/org.spdx/spdx-spreadsheet-store)
 [![javadoc](https://javadoc.io/badge2/org.spdx/spdx-spreadsheet-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-spreadsheet-store)
