@@ -47,7 +47,7 @@ import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
 
 /**
- * Version 2.1 of the package info sheet
+ * Version 2.2 of the package info sheet
  * @author Gary O'Neall
  *
  */
