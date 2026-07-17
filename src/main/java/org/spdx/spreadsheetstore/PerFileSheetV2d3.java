@@ -51,7 +51,7 @@ import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 
 /**
- * Per file sheet voer version 2.2 of the SPDX spec
+ * Per file sheet for version 2.3 of the SPDX spec
  * 
  * @author Gary O'Neall
  *
