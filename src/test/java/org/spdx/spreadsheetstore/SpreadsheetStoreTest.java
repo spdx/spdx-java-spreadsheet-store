@@ -1,5 +1,6 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
+ * SPDX-FileContributor: Arthit Suriyawongkul
  * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
@@ -67,6 +68,7 @@ import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoAssertionLicense;
 import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
 import org.spdx.library.referencetype.ListedReferenceTypes;
+import org.spdx.spreadsheetstore.SpreadsheetStore.SpreadsheetFormatType;
 import org.spdx.storage.compatv2.CompatibleModelStoreWrapper;
 import org.spdx.storage.simple.InMemSpdxStore;
 import org.spdx.utility.compare.SpdxCompareException;
@@ -493,6 +495,103 @@ public class SpreadsheetStoreTest extends TestCase {
 			tempFilePath.toFile().delete();
 		}
 		
+	}
+
+	/**
+	 * Test method for
+	 * {@link org.spdx.spreadsheetstore.SpreadsheetStore#serialize(java.io.OutputStream)}
+	 * using ODS format.
+	 *
+	 * @throws InvalidSPDXAnalysisException 
+	 * @throws IOException 
+	 * @throws SpdxCompareException 
+	 */
+	@SuppressWarnings("unchecked")
+	public void testSerializeOds() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore(), SpreadsheetFormatType.ODS);
+		String documentUri = "http://newdoc/uri";
+		ModelCopyManager copyManager = new ModelCopyManager();
+		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
+			try {
+				copyManager.copy(sst, compareStore, tv.getObjectUri(), 
+						CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		compareStore.getAllItems(compareDocument.getDocumentUri(), null).forEach(tv -> {
+			try {
+				if (!SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF.equals(tv.getType())) {
+					copyManager.copy(sst, compareStore, tv.getObjectUri(), 
+							CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+				}
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		
+		Path tempFilePath = Files.createTempFile("temp", ".ods");
+		try {
+			try (FileOutputStream out = new FileOutputStream(tempFilePath.toFile())) {
+				sst.serialize(out);
+			}
+			SpreadsheetStore resultStore = new SpreadsheetStore(new InMemSpdxStore());
+			try (FileInputStream stream = new FileInputStream(tempFilePath.toFile())) {
+				resultStore.deSerialize(stream, false);
+			}
+			List<SpdxDocument> allDocs = (List<SpdxDocument>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_DOCUMENT, null, null).collect(Collectors.toList());
+			assertEquals(1, allDocs.size());
+			String resultDocUri = allDocs.get(0).getDocumentUri();
+			assertEquals(documentUri, resultDocUri);
+			ModelCopyManager cm = new ModelCopyManager();
+			SpdxDocument doc = new SpdxDocument(resultStore, resultDocUri, cm, false);
+			// Document fields and extracted license infos
+			assertDocFields(doc, "SPDX-2.3");
+			SpdxComparer comparer = new SpdxComparer();
+			SpdxPackage comparePkg = new SpdxPackage(compareDocument.getModelStore(), compareDocument.getDocumentUri(), "SPDXRef-Package", null, false);
+			SpdxPackage resultPkg = new SpdxPackage(resultStore, resultDocUri, "SPDXRef-Package", null, false);
+			assertTrue(resultPkg.equivalent(comparePkg));
+			comparer.compare(compareDocument, doc);
+			assertFalse(comparer.isDifferenceFound());
+			// Files
+			try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_FILE, documentUri, documentUri + "#")) {
+			    elementStream.forEach(element -> {
+	                try {
+	                    assertTrue(((SpdxElement)element).equivalent(compareFiles.get(((SpdxElement)element).getId())));
+	                } catch (InvalidSPDXAnalysisException e) {
+	                    fail("Exception: "+e.getMessage());
+	                }
+	            });
+			}
+			
+			// Packages
+           try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_PACKAGE, documentUri, documentUri + "#")) {
+                elementStream.forEach(element -> {
+                    try {
+                     	assertTrue(((SpdxElement)element).equivalent(comparePackages.get(((SpdxElement)element).getId())));
+                    } catch (InvalidSPDXAnalysisException e) {
+                        fail("Exception: "+e.getMessage());
+                    }
+                });
+            }
+
+			// Snippets
+            try(Stream<SpdxElement> elementStream = (Stream<SpdxElement>)SpdxModelFactory.getSpdxObjects(resultStore, copyManager,
+					SpdxConstantsCompatV2.CLASS_SPDX_SNIPPET, documentUri, documentUri + "#")) {
+               elementStream.forEach(element -> {
+                   try {
+                       assertTrue(((SpdxElement)element).equivalent(compareSnippets.get(((SpdxElement)element).getId())));
+                   } catch (InvalidSPDXAnalysisException e) {
+                       fail("Exception: "+e.getMessage());
+                   }
+               });
+            }
+		} finally {
+			tempFilePath.toFile().delete();
+		}
 	}
 
 	/**
