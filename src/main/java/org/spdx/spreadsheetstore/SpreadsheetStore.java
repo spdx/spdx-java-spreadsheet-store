@@ -81,7 +81,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	/**
 	 * Enum for the spreadsheet format type
 	 */
-	public enum SpreadsheetFormatType {XLS, XLSX};
+	public enum SpreadsheetFormatType {ODS, XLS, XLSX};
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
