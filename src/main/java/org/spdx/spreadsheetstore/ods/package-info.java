@@ -28,5 +28,12 @@
  * standard {@code "YYYY-MM-DD"} format, while custom numerical and string
  * format patterns remain unstyled.
  * </p>
+ * <p>
+ * This is a display-only limitation. Date/time values are still stored with
+ * full {@code HH:mm:ss} precision in the cell's underlying
+ * {@code office:date-value} attribute; only the visual rendering in
+ * spreadsheet applications (e.g. LibreOffice, Excel) is truncated to the
+ * date portion.
+ * </p>
  */
 package org.spdx.spreadsheetstore.ods;

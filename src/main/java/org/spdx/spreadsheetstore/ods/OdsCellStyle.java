@@ -238,6 +238,12 @@ public class OdsCellStyle implements CellStyle {
 	 * dates are properly displayed. Other formats are currently stored but may not
 	 * affect the final ODS cell rendering.
 	 * </p>
+	 * <p>
+	 * This is display-only: the full {@code HH:mm:ss} timestamp is still stored
+	 * in {@code office:date-value} and returned unchanged by
+	 * {@link Cell#getDateCellValue()}, even though time-inclusive formats
+	 * render as date-only in spreadsheet applications.
+	 * </p>
 	 *
 	 * @param fmt the data format index
 	 */
