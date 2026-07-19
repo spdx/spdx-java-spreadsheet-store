@@ -91,6 +91,33 @@ public class SpdxSpreadsheet {
 
 	private ModelCopyManager copyManager;
 
+	// Detects if the input stream contains an OpenDocument Spreadsheet file.
+	private static boolean isOdsStream(InputStream stream) {
+		try {
+			stream.mark(512);
+			byte[] header = new byte[256];
+			int bytesRead = 0;
+			while (bytesRead < header.length) {
+				int r = stream.read(header, bytesRead, header.length - bytesRead);
+				if (r < 0) {
+					break;
+				}
+				bytesRead += r;
+			}
+			stream.reset();
+			if (bytesRead < 4) {
+				return false;
+			}
+			if (header[0] != 0x50 || header[1] != 0x4B || header[2] != 0x03 || header[3] != 0x04) {
+				return false;
+			}
+			String s = new String(header, 0, bytesRead, java.nio.charset.StandardCharsets.US_ASCII);
+			return s.contains("application/vnd.oasis.opendocument.spreadsheet");
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
 	/**
 	 * Open an existing SPDX spreadsheet from an input stream
 	 * @param stream
@@ -103,8 +130,13 @@ public class SpdxSpreadsheet {
 		Objects.requireNonNull(copyManager, "Missing required model copy manager");
 		this.modelStore = modelStore;
 		this.copyManager = copyManager;
+		InputStream bis = stream.markSupported() ? stream : new java.io.BufferedInputStream(stream);
 		try {
-			workbook = WorkbookFactory.create(stream);
+			if (isOdsStream(bis)) {
+				workbook = new org.spdx.spreadsheetstore.ods.OdsWorkbook(bis);
+			} else {
+				workbook = WorkbookFactory.create(bis);
+			}
 		} catch (EncryptedDocumentException e) {
 			logger.error("Unable to read encrypted SPDX Spreadsheet", e);
 			throw new SpreadsheetException("Unable to read encrypted SPDX Spreadsheet", e);
@@ -156,6 +188,8 @@ public class SpdxSpreadsheet {
 			workbook = new XSSFWorkbook();
 		} else if (SpreadsheetFormatType.XLS.equals(spreadsheetFormat)) {
 			workbook = new HSSFWorkbook();
+		} else if (SpreadsheetFormatType.ODS.equals(spreadsheetFormat)) {
+			workbook = new org.spdx.spreadsheetstore.ods.OdsWorkbook();
 		} else {
 			throw new SpreadsheetException("Unsupported spreadsheet format: "+spreadsheetFormat);
 		}
