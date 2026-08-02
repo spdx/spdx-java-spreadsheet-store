@@ -448,8 +448,8 @@ public class SnippetSheet extends AbstractSheet {
 		}
 		SpdxFile snippetFromFile = (SpdxFile)moFromFile.get();
 		
-		if (Objects.isNull(row.getCell(BYTE_RANGE_COL)) && row.getCell(BYTE_RANGE_COL).getStringCellValue().trim().isEmpty()) {
-			throw new SpreadsheetException("Missing reqired byte range for Snippet ID "+id);
+		if (Objects.isNull(row.getCell(BYTE_RANGE_COL)) || row.getCell(BYTE_RANGE_COL).getStringCellValue().trim().isEmpty()) {
+			throw new SpreadsheetException("Missing required byte range for Snippet ID "+id);
 		}
 			String range = row.getCell(BYTE_RANGE_COL).getStringCellValue();
 			int start = 0;
