@@ -6,8 +6,34 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
-import java.util.*;
-import org.apache.poi.ss.usermodel.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+
+import org.apache.poi.ss.usermodel.AutoFilter;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellRange;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.DataValidation;
+import org.apache.poi.ss.usermodel.DataValidationHelper;
+import org.apache.poi.ss.usermodel.Drawing;
+import org.apache.poi.ss.usermodel.Footer;
+import org.apache.poi.ss.usermodel.Header;
+import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.ss.usermodel.PageMargin;
+import org.apache.poi.ss.usermodel.PaneType;
+import org.apache.poi.ss.usermodel.PrintSetup;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetConditionalFormatting;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 
@@ -21,25 +47,36 @@ public class OdsSheet implements Sheet {
 	private final com.github.miachm.sods.Sheet sodsSheet;
 	private final NavigableMap<Integer, OdsRow> rows = new TreeMap<>();
 
+	private final List<CellRangeAddress> mergedRegions = new ArrayList<>();
+
+	/**
+	 * Creates an ODS sheet wrapper around a SODS sheet.
+	 *
+	 * @param workbook Parent ODS workbook adapter.
+	 * @param sodsSheet Underlying SODS sheet instance.
+	 */
 	public OdsSheet(OdsWorkbook workbook, com.github.miachm.sods.Sheet sodsSheet) {
 		this.workbook = workbook;
 		this.sodsSheet = sodsSheet;
-		for (int r = 0; r < sodsSheet.getMaxRows(); r++) {
-			rows.put(r, new OdsRow(this, r));
-		}
 	}
 
-	public com.github.miachm.sods.Sheet getSodsSheet() {
+	/**
+	 * Returns the underlying SODS sheet instance.
+	 *
+	 * @return The underlying SODS sheet.
+	 */
+	com.github.miachm.sods.Sheet getSodsSheet() {
 		return this.sodsSheet;
 	}
 
 	@Override
-	public Row createRow(int rownum) {
+	public synchronized Row createRow(int rownum) {
+		if (rownum < 0) {
+			throw new IllegalArgumentException("Row number must be >= 0");
+		}
 		int currentRows = sodsSheet.getMaxRows();
 		if (rownum >= currentRows) {
-			for (int i = currentRows; i <= rownum; i++) {
-				sodsSheet.appendRow();
-			}
+			sodsSheet.appendRows(rownum - currentRows + 1);
 		}
 		OdsRow row = new OdsRow(this, rownum);
 		rows.put(rownum, row);
@@ -47,8 +84,17 @@ public class OdsSheet implements Sheet {
 	}
 
 	@Override
-	public Row getRow(int rownum) {
-		return rows.get(rownum);
+	public synchronized Row getRow(int rownum) {
+		OdsRow row = rows.get(rownum);
+		if (row != null) {
+			return row;
+		}
+		if (rownum >= 0 && rownum < sodsSheet.getMaxRows()) {
+			OdsRow newRow = new OdsRow(this, rownum);
+			rows.put(rownum, newRow);
+			return newRow;
+		}
+		return null;
 	}
 
 	@Override
@@ -61,23 +107,82 @@ public class OdsSheet implements Sheet {
 		}
 	}
 
+	private boolean hasData() {
+		if (!rows.isEmpty()) {
+			return true;
+		}
+		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
+		if (dataRange == null) {
+			return false;
+		}
+		for (int r = dataRange.getRow(); r <= dataRange.getLastRow(); r++) {
+			for (int c = dataRange.getColumn(); c <= dataRange.getLastColumn(); c++) {
+				com.github.miachm.sods.Range range = sodsSheet.getRange(r, c);
+				if (range.getValue() != null || range.getFormula() != null || range.getAnnotation() != null) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public int getFirstRowNum() {
-		return rows.isEmpty() ? 0 : rows.keySet().iterator().next();
+		if (!hasData()) {
+			return -1;
+		}
+		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
+		if (!rows.isEmpty()) {
+			int firstRow = rows.firstKey();
+			if (dataRange != null) {
+				return Math.min(firstRow, dataRange.getRow());
+			}
+			return firstRow;
+		}
+		return dataRange.getRow();
 	}
 
 	@Override
 	public int getLastRowNum() {
-		return rows.isEmpty() ? 0 : rows.lastKey();
+		if (!hasData()) {
+			return -1;
+		}
+		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
+		if (!rows.isEmpty()) {
+			int lastRow = rows.lastKey();
+			if (dataRange != null) {
+				return Math.max(lastRow, dataRange.getLastRow());
+			}
+			return lastRow;
+		}
+		return dataRange.getLastRow();
 	}
 
 	@Override
 	public void setColumnWidth(int columnIndex, int width) {
+		if (columnIndex < 0) {
+			throw new IllegalArgumentException("Column index must be >= 0");
+		}
+		int currentCols = sodsSheet.getMaxColumns();
+		if (columnIndex >= currentCols) {
+			sodsSheet.appendColumns(columnIndex - currentCols + 1);
+		}
+		// Convert POI 1/256th character units to SODS millimeters.
+		// 1 character width (e.g. 10pt Arial '0') = 5.25 pt = 5.25 * (25.4/72) mm ≈ 1.852 mm.
+		double widthMm = (width / 256.0) * 1.852;
+		sodsSheet.setColumnWidth(columnIndex, widthMm);
 	}
 
 	@Override
 	public int getColumnWidth(int columnIndex) {
-		return 2048;
+		if (columnIndex >= 0 && columnIndex < sodsSheet.getMaxColumns()) {
+			double widthMm = sodsSheet.getColumnWidth(columnIndex);
+			if (widthMm > 0) {
+				// Convert SODS millimeters back to POI 1/256th character units.
+				return (int) Math.round((widthMm / 1.852) * 256.0);
+			}
+		}
+		return 2048; // default width
 	}
 
 	@Override
@@ -109,19 +214,98 @@ public class OdsSheet implements Sheet {
 	@Override
 	public void setActiveCell(CellAddress address) {}
 	@Override
-	public void removeMergedRegion(int index) {}
+	public void removeMergedRegion(int index) {
+		if (index < 0 || index >= mergedRegions.size()) {
+			throw new IllegalArgumentException("Invalid merged region index: " + index);
+		}
+		CellRangeAddress region = mergedRegions.remove(index);
+		int firstRow = region.getFirstRow();
+		int firstCol = region.getFirstColumn();
+		int numRows = region.getLastRow() - firstRow + 1;
+		int numCols = region.getLastColumn() - firstCol + 1;
+		com.github.miachm.sods.Range range = sodsSheet.getRange(firstRow, firstCol, numRows, numCols);
+		range.split();
+	}
+
 	@Override
-	public void removeMergedRegions(Collection<Integer> indices) {}
+	public void removeMergedRegions(Collection<Integer> indices) {
+		if (indices != null) {
+			List<Integer> sorted = new ArrayList<>();
+			for (Integer idx : indices) {
+				if (idx != null) {
+					sorted.add(idx);
+				}
+			}
+			Collections.sort(sorted, Collections.reverseOrder());
+			for (int idx : sorted) {
+				if (idx >= 0 && idx < mergedRegions.size()) {
+					removeMergedRegion(idx);
+				}
+			}
+		}
+	}
+
 	@Override
-	public int getNumMergedRegions() { return 0; }
+	public int getNumMergedRegions() {
+		return mergedRegions.size();
+	}
+
 	@Override
-	public CellRangeAddress getMergedRegion(int index) { return null; }
+	public CellRangeAddress getMergedRegion(int index) {
+		if (index < 0 || index >= mergedRegions.size()) {
+			throw new IllegalArgumentException("Invalid merged region index: " + index);
+		}
+		return mergedRegions.get(index);
+	}
+
 	@Override
-	public List<CellRangeAddress> getMergedRegions() { return new ArrayList<>(); }
+	public List<CellRangeAddress> getMergedRegions() {
+		return new ArrayList<>(mergedRegions);
+	}
 	@Override
 	public Iterator<Row> rowIterator() {
-		List<Row> list = new ArrayList<>(rows.values());
-		return list.iterator();
+		return new Iterator<Row>() {
+			private int curRow = getFirstRowNum();
+			private final int lastRow = getLastRowNum();
+			private Row nextRow = null;
+
+			private void advance() {
+				nextRow = null;
+				if (curRow < 0) return;
+				while (curRow <= lastRow) {
+					Row r = getRow(curRow);
+					curRow++;
+					if (r != null) {
+						nextRow = r;
+						break;
+					}
+				}
+			}
+
+			{
+				advance();
+			}
+
+			@Override
+			public boolean hasNext() {
+				return nextRow != null;
+			}
+
+			@Override
+			public Row next() {
+				if (!hasNext()) {
+					throw new java.util.NoSuchElementException();
+				}
+				Row res = nextRow;
+				advance();
+				return res;
+			}
+
+			@Override
+			public void remove() {
+				throw new UnsupportedOperationException("Remove not supported on row iterator");
+			}
+		};
 	}
 	@Override
 	public Iterator<Row> iterator() {
@@ -158,9 +342,32 @@ public class OdsSheet implements Sheet {
 	@Override
 	public int getPhysicalNumberOfRows() { return rows.size(); }
 	@Override
-	public int addMergedRegion(CellRangeAddress region) { return 0; }
+	public int addMergedRegion(CellRangeAddress region) {
+		if (region == null) {
+			throw new IllegalArgumentException("Merged region cannot be null");
+		}
+		int firstRow = region.getFirstRow();
+		int lastRow = region.getLastRow();
+		int firstCol = region.getFirstColumn();
+		int lastCol = region.getLastColumn();
+		if (lastRow >= sodsSheet.getMaxRows()) {
+			sodsSheet.appendRows(lastRow - sodsSheet.getMaxRows() + 1);
+		}
+		if (lastCol >= sodsSheet.getMaxColumns()) {
+			sodsSheet.appendColumns(lastCol - sodsSheet.getMaxColumns() + 1);
+		}
+		int numRows = lastRow - firstRow + 1;
+		int numCols = lastCol - firstCol + 1;
+		com.github.miachm.sods.Range range = sodsSheet.getRange(firstRow, firstCol, numRows, numCols);
+		range.merge();
+		mergedRegions.add(region);
+		return mergedRegions.size() - 1;
+	}
+
 	@Override
-	public int addMergedRegionUnsafe(CellRangeAddress region) { return 0; }
+	public int addMergedRegionUnsafe(CellRangeAddress region) {
+		return addMergedRegion(region);
+	}
 
 	@Override
 	public CellAddress getActiveCell() { return null; }
@@ -221,11 +428,44 @@ public class OdsSheet implements Sheet {
 
 	@Override
 	public Map<CellAddress, ? extends Comment> getCellComments() {
-		return new HashMap<>();
+		Map<CellAddress, Comment> map = new HashMap<>();
+		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
+		if (dataRange == null) {
+			return map;
+		}
+		int startRow = dataRange.getRow();
+		int endRow = dataRange.getLastRow();
+		int startCol = dataRange.getColumn();
+		int endCol = dataRange.getLastColumn();
+		for (int r = startRow; r <= endRow; r++) {
+			for (int c = startCol; c <= endCol; c++) {
+				com.github.miachm.sods.Range range = sodsSheet.getRange(r, c);
+				if (range.getAnnotation() != null) {
+					CellAddress addr = new CellAddress(r, c);
+					OdsComment comment = new OdsComment(range.getAnnotation());
+					comment.setAddress(addr);
+					map.put(addr, comment);
+				}
+			}
+		}
+		return map;
 	}
 
 	@Override
-	public Comment getCellComment(CellAddress address) { return null; }
+	public Comment getCellComment(CellAddress address) {
+		if (address == null) return null;
+		int r = address.getRow();
+		int c = address.getColumn();
+		if (r >= 0 && r < sodsSheet.getMaxRows() && c >= 0 && c < sodsSheet.getMaxColumns()) {
+			com.github.miachm.sods.Range range = sodsSheet.getRange(r, c);
+			if (range.getAnnotation() != null) {
+				OdsComment comment = new OdsComment(range.getAnnotation());
+				comment.setAddress(address);
+				return comment;
+			}
+		}
+		return null;
+	}
 
 	@Override
 	public void autoSizeColumn(int columnIndex, boolean useMergedCells) {}
@@ -278,17 +518,38 @@ public class OdsSheet implements Sheet {
 	@Override
 	public boolean isDisplayRowColHeadings() { return true; }
 
+	private boolean protectedState = false;
+	private final Map<Short, Double> marginMap = new HashMap<>();
+	private int freezeColSplit = 0;
+	private int freezeRowSplit = 0;
+
 	@Override
 	public boolean isDisplayFormulas() { return false; }
 
 	@Override
-	public org.apache.poi.ss.util.PaneInformation getPaneInformation() { return null; }
+	public org.apache.poi.ss.util.PaneInformation getPaneInformation() {
+		if (freezeColSplit > 0 || freezeRowSplit > 0) {
+			return new org.apache.poi.ss.util.PaneInformation((short) freezeColSplit, (short) freezeRowSplit, (short) freezeRowSplit, (short) freezeColSplit, (byte) 0, true);
+		}
+		return null;
+	}
 
 	@Override
-	public void createFreezePane(int colSplit, int rowSplit, int leftmostColumn, int topRow) {}
+	public void createFreezePane(int colSplit, int rowSplit, int leftmostColumn, int topRow) {
+		createFreezePane(colSplit, rowSplit);
+	}
 
 	@Override
-	public void createFreezePane(int colSplit, int rowSplit) {}
+	public void createFreezePane(int colSplit, int rowSplit) {
+		this.freezeColSplit = colSplit;
+		this.freezeRowSplit = rowSplit;
+		if (rowSplit > 0) {
+			sodsSheet.freezeRows(rowSplit);
+		}
+		if (colSplit > 0) {
+			sodsSheet.freezeColumns(colSplit);
+		}
+	}
 
 	@Override
 	public void createSplitPane(int xSplit, int ySplit, int leftmostColumn, int topRow, PaneType activePane) {}
@@ -321,28 +582,103 @@ public class OdsSheet implements Sheet {
 	public boolean getScenarioProtect() { return false; }
 
 	@Override
-	public void protectSheet(String password) {}
+	public void protectSheet(String password) {
+		this.protectedState = true;
+		if (password != null && !password.isEmpty()) {
+			try {
+				sodsSheet.setPassword(password);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to set sheet password", e);
+			}
+		}
+	}
 
 	@Override
-	public boolean getProtect() { return false; }
+	public boolean getProtect() {
+		return protectedState || sodsSheet.isProtected();
+	}
 
 	@Override
-	public double getMargin(short margin) { return 0; }
+	public double getMargin(short margin) {
+		Double val = marginMap.get(margin);
+		return val != null ? val : 0.75;
+	}
 
 	@Override
-	public void setMargin(short margin, double size) {}
+	public void setMargin(short margin, double size) {
+		marginMap.put(margin, size);
+	}
 
 	@Override
 	public void setSelected(boolean sel) {}
 
-	@Override
-	public Header getHeader() { return null; }
+	private static class OdsHeaderFooterStub implements Header, Footer {
+		private String left = "";
+		private String center = "";
+		private String right = "";
+
+		@Override public String getLeft() { return left; }
+		@Override public void setLeft(String newLeft) { this.left = newLeft != null ? newLeft : ""; }
+		@Override public String getCenter() { return center; }
+		@Override public void setCenter(String newCenter) { this.center = newCenter != null ? newCenter : ""; }
+		@Override public String getRight() { return right; }
+		@Override public void setRight(String newRight) { this.right = newRight != null ? newRight : ""; }
+	}
+
+	private final OdsHeaderFooterStub headerStub = new OdsHeaderFooterStub();
+	private final OdsHeaderFooterStub footerStub = new OdsHeaderFooterStub();
 
 	@Override
-	public Footer getFooter() { return null; }
+	public Header getHeader() { return headerStub; }
 
 	@Override
-	public PrintSetup getPrintSetup() { return null; }
+	public Footer getFooter() { return footerStub; }
+
+	private static class OdsPrintSetupStub implements PrintSetup {
+		private boolean landscape = false;
+		private short paperSize = LETTER_PAPERSIZE;
+		@Override public void setPaperSize(short size) { this.paperSize = size; }
+		@Override public void setScale(short scale) {}
+		@Override public void setPageStart(short start) {}
+		@Override public void setFitWidth(short width) {}
+		@Override public void setFitHeight(short height) {}
+		@Override public void setLeftToRight(boolean ltr) {}
+		@Override public void setLandscape(boolean ls) { this.landscape = ls; }
+		@Override public void setValidSettings(boolean valid) {}
+		@Override public void setNoColor(boolean mono) {}
+		@Override public void setDraft(boolean draft) {}
+		@Override public void setNotes(boolean printNotes) {}
+		@Override public void setNoOrientation(boolean orientation) {}
+		@Override public void setUsePage(boolean page) {}
+		@Override public void setHResolution(short resolution) {}
+		@Override public void setVResolution(short resolution) {}
+		@Override public void setCopies(short copies) {}
+		@Override public short getPaperSize() { return paperSize; }
+		@Override public short getScale() { return 100; }
+		@Override public short getPageStart() { return 1; }
+		@Override public short getFitWidth() { return 1; }
+		@Override public short getFitHeight() { return 1; }
+		@Override public boolean getLeftToRight() { return false; }
+		@Override public boolean getLandscape() { return landscape; }
+		@Override public boolean getValidSettings() { return true; }
+		@Override public boolean getNoColor() { return false; }
+		@Override public boolean getDraft() { return false; }
+		@Override public boolean getNotes() { return false; }
+		@Override public boolean getNoOrientation() { return false; }
+		@Override public boolean getUsePage() { return false; }
+		@Override public short getHResolution() { return 300; }
+		@Override public short getVResolution() { return 300; }
+		@Override public void setHeaderMargin(double headmargin) {}
+		@Override public void setFooterMargin(double footmargin) {}
+		@Override public double getHeaderMargin() { return 0.5; }
+		@Override public double getFooterMargin() { return 0.5; }
+		@Override public short getCopies() { return 1; }
+	}
+
+	private final OdsPrintSetupStub printSetupStub = new OdsPrintSetupStub();
+
+	@Override
+	public PrintSetup getPrintSetup() { return printSetupStub; }
 
 	@Override
 	public boolean getFitToPage() { return false; }
@@ -402,8 +738,25 @@ public class OdsSheet implements Sheet {
 	public void setRightToLeft(boolean value) {}
 
 	@Override
-	public boolean isColumnHidden(int columnIndex) { return false; }
+	public boolean isColumnHidden(int columnIndex) {
+		if (columnIndex >= 0 && columnIndex < sodsSheet.getMaxColumns()) {
+			return sodsSheet.columnIsHidden(columnIndex);
+		}
+		return false;
+	}
 
 	@Override
-	public void setColumnHidden(int columnIndex, boolean hidden) {}
+	public void setColumnHidden(int columnIndex, boolean hidden) {
+		if (columnIndex >= 0) {
+			int currentCols = sodsSheet.getMaxColumns();
+			if (columnIndex >= currentCols) {
+				sodsSheet.appendColumns(columnIndex - currentCols + 1);
+			}
+			if (hidden) {
+				sodsSheet.hideColumn(columnIndex);
+			} else {
+				sodsSheet.showColumn(columnIndex);
+			}
+		}
+	}
 }

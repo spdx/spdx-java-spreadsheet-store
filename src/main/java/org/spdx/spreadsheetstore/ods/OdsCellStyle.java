@@ -6,7 +6,15 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.hssf.util.HSSFColor;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.Color;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 
 /**
  * Adapter for Apache POI {@link CellStyle} over the SODS {@link com.github.miachm.sods.Style}.
@@ -15,6 +23,7 @@ import org.apache.poi.ss.usermodel.*;
 public class OdsCellStyle implements CellStyle {
 
 	private final com.github.miachm.sods.Style style = new com.github.miachm.sods.Style();
+	private final com.github.miachm.sods.Borders borders = new com.github.miachm.sods.Borders();
 	private boolean wrapText = false;
 	private int fontIndex = -1;
 	private short fillForegroundColor = 0;
@@ -31,11 +40,21 @@ public class OdsCellStyle implements CellStyle {
 
 	private final OdsWorkbook workbook;
 
+	/**
+	 * Creates an ODS cell style adapter.
+	 *
+	 * @param workbook Parent ODS workbook.
+	 */
 	public OdsCellStyle(OdsWorkbook workbook) {
 		this.workbook = workbook;
 	}
 
-	public com.github.miachm.sods.Style getSodsStyle() {
+	/**
+	 * Returns the underlying SODS Style instance.
+	 *
+	 * @return The underlying SODS Style.
+	 */
+	com.github.miachm.sods.Style getSodsStyle() {
 		return style;
 	}
 
@@ -118,27 +137,25 @@ public class OdsCellStyle implements CellStyle {
 	}
 
 	private void updateBorders() {
-		com.github.miachm.sods.Borders borders = new com.github.miachm.sods.Borders();
-		
-		boolean hasBottom = borderBottom != BorderStyle.NONE;
+		boolean hasBottom = borderBottom != null && borderBottom != BorderStyle.NONE;
 		borders.setBorderBottom(hasBottom);
 		if (hasBottom) {
 			borders.setBorderBottomProperties(getBorderProperties(borderBottom));
 		}
 		
-		boolean hasLeft = borderLeft != BorderStyle.NONE;
+		boolean hasLeft = borderLeft != null && borderLeft != BorderStyle.NONE;
 		borders.setBorderLeft(hasLeft);
 		if (hasLeft) {
 			borders.setBorderLeftProperties(getBorderProperties(borderLeft));
 		}
 		
-		boolean hasRight = borderRight != BorderStyle.NONE;
+		boolean hasRight = borderRight != null && borderRight != BorderStyle.NONE;
 		borders.setBorderRight(hasRight);
 		if (hasRight) {
 			borders.setBorderRightProperties(getBorderProperties(borderRight));
 		}
 		
-		boolean hasTop = borderTop != BorderStyle.NONE;
+		boolean hasTop = borderTop != null && borderTop != BorderStyle.NONE;
 		borders.setBorderTop(hasTop);
 		if (hasTop) {
 			borders.setBorderTopProperties(getBorderProperties(borderTop));
@@ -178,18 +195,11 @@ public class OdsCellStyle implements CellStyle {
 	}
 
 	private com.github.miachm.sods.Color getSodsColor(short indexedColor) {
-		// Map IndexedColors to standard RGB
-		if (indexedColor == 42 || indexedColor == 57) { // LIGHT_GREEN
-			return new com.github.miachm.sods.Color(204, 255, 204);
-		}
-		if (indexedColor == 43 || indexedColor == 34) { // LIGHT_YELLOW
-			return new com.github.miachm.sods.Color(255, 255, 153);
-		}
-		if (indexedColor == 10) { // RED
-			return new com.github.miachm.sods.Color(255, 199, 206);
-		}
-		if (indexedColor == 22) { // GREY_25_PERCENT
-			return new com.github.miachm.sods.Color(224, 224, 224);
+		java.util.Map<Integer, org.apache.poi.hssf.util.HSSFColor> map = org.apache.poi.hssf.util.HSSFColor.getIndexHash();
+		org.apache.poi.hssf.util.HSSFColor hc = map.get((int) indexedColor);
+		if (hc != null && hc.getTriplet() != null) {
+			short[] rgb = hc.getTriplet();
+			return new com.github.miachm.sods.Color(rgb[0], rgb[1], rgb[2]);
 		}
 		return null;
 	}
@@ -211,21 +221,18 @@ public class OdsCellStyle implements CellStyle {
 
 	@Override
 	public void setFont(Font font) {
-		if (font instanceof OdsFont) {
-			OdsFont odsFont = (OdsFont) font;
-			this.fontIndex = odsFont.getIndex();
-			style.setFontFamily(odsFont.getFontName());
-			style.setFontSize((int) odsFont.getFontHeightInPoints());
-			style.setBold(odsFont.getBold());
-			style.setItalic(odsFont.getItalic());
-			style.setUnderline(odsFont.getUnderline() != org.apache.poi.ss.usermodel.Font.U_NONE);
-			style.setLineThrough(odsFont.getStrikeout());
-			// Map font color if we want
-			short fontColorIdx = odsFont.getColor();
-			com.github.miachm.sods.Color fontColor = getSodsColor(fontColorIdx);
-			if (fontColor != null) {
-				style.setFontColor(fontColor);
-			}
+		if (font == null) return;
+		this.fontIndex = font.getIndex();
+		style.setFontFamily(font.getFontName());
+		style.setFontSize((int) Math.round((double) font.getFontHeight() / 20.0));
+		style.setBold(font.getBold());
+		style.setItalic(font.getItalic());
+		style.setUnderline(font.getUnderline() != org.apache.poi.ss.usermodel.Font.U_NONE);
+		style.setLineThrough(font.getStrikeout());
+		short fontColorIdx = font.getColor();
+		com.github.miachm.sods.Color fontColor = getSodsColor(fontColorIdx);
+		if (fontColor != null) {
+			style.setFontColor(fontColor);
 		}
 	}
 

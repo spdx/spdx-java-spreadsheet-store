@@ -45,7 +45,7 @@ import org.spdx.storage.IModelStore;
  * 
  * @author Gary O'Neall
  */
-public class SpdxSpreadsheet {
+public class SpdxSpreadsheet implements AutoCloseable {
 	
 	static final Logger logger = LoggerFactory.getLogger(SpdxSpreadsheet.class);
 	
@@ -94,8 +94,8 @@ public class SpdxSpreadsheet {
 	// Detects if the input stream contains an OpenDocument Spreadsheet file.
 	private static boolean isOdsStream(InputStream stream) {
 		try {
-			stream.mark(512);
-			byte[] header = new byte[256];
+			stream.mark(4096);
+			byte[] header = new byte[2048];
 			int bytesRead = 0;
 			while (bytesRead < header.length) {
 				int r = stream.read(header, bytesRead, header.length - bytesRead);
@@ -143,6 +143,9 @@ public class SpdxSpreadsheet {
 		} catch (IOException e) {
 			logger.error("I/O error reading SPDX Spreadsheet", e);
 			throw new SpreadsheetException("I/O error reading SPDX Spreadsheet", e);
+		} catch (Exception e) {
+			logger.error("Error reading SPDX Spreadsheet", e);
+			throw new SpreadsheetException("Error reading SPDX Spreadsheet", e);
 		}
 		this.version = readVersion(this.workbook, DOCUMENT_INFO_NAME);
 		if (this.version.equals(UNKNOWN_VERSION)) {
@@ -460,4 +463,10 @@ public class SpdxSpreadsheet {
 		this.workbook.write(stream);
 	}
 
+	@Override
+	public void close() throws IOException {
+		if (this.workbook != null) {
+			this.workbook.close();
+		}
+	}
 }

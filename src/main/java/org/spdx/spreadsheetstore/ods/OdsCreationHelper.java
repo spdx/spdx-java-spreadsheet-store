@@ -7,7 +7,13 @@
 package org.spdx.spreadsheetstore.ods;
 
 import org.apache.poi.common.usermodel.HyperlinkType;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.ClientAnchor;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.ExtendedColor;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
+import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellReference;
 
@@ -20,6 +26,11 @@ public class OdsCreationHelper implements CreationHelper {
 	private final OdsWorkbook workbook;
 	private final OdsDataFormat dataFormat = new OdsDataFormat();
 
+	/**
+	 * Creates an ODS creation helper adapter.
+	 *
+	 * @param workbook Parent ODS workbook.
+	 */
 	public OdsCreationHelper(OdsWorkbook workbook) {
 		this.workbook = workbook;
 	}
@@ -61,6 +72,6 @@ public class OdsCreationHelper implements CreationHelper {
 
 	@Override
 	public RichTextString createRichTextString(String text) {
-		return new org.apache.poi.xssf.usermodel.XSSFRichTextString(text);
+		return new OdsRichTextString(text);
 	}
 }

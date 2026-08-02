@@ -6,8 +6,20 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
+import java.util.Calendar;
 import java.util.Date;
-import org.apache.poi.ss.usermodel.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.Comment;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Hyperlink;
+import org.apache.poi.ss.usermodel.RichTextString;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellAddress;
 import org.apache.poi.ss.util.CellRangeAddress;
 
@@ -21,38 +33,62 @@ public class OdsCell implements Cell {
 	private final com.github.miachm.sods.Range range;
 	private CellStyle cellStyle;
 
+	/**
+	 * Creates an ODS cell wrapper.
+	 *
+	 * @param row Parent ODS row adapter.
+	 * @param columnIndex Zero-based column index.
+	 * @param range Underlying SODS Range representing this cell.
+	 */
 	public OdsCell(OdsRow row, int columnIndex, com.github.miachm.sods.Range range) {
 		this.row = row;
 		this.columnIndex = columnIndex;
 		this.range = range;
 	}
 
-	public com.github.miachm.sods.Range getSodsRange() {
+	/**
+	 * Returns the underlying SODS Range instance.
+	 *
+	 * @return The underlying SODS Range.
+	 */
+	com.github.miachm.sods.Range getSodsRange() {
 		return range;
 	}
 
 	@Override
 	public void setCellValue(String value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 
 	@Override
 	public void setCellValue(double value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 
 	@Override
 	public void setCellValue(Date value) {
+		range.setFormula(null);
 		if (value == null) {
 			range.setValue(null);
 		} else {
-			java.time.LocalDateTime ldt = java.time.LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneId.systemDefault());
+			java.time.LocalDateTime ldt = java.time.LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneOffset.UTC);
 			range.setValue(ldt);
 		}
 	}
 
 	@Override
 	public void setCellType(CellType cellType) {
+		if (cellType == CellType.BLANK) {
+			range.setValue(null);
+			range.setFormula(null);
+		} else if (cellType == CellType.STRING) {
+			Object val = range.getValue();
+			if (val != null) {
+				range.setValue(val.toString());
+			}
+		}
 	}
 
 	@Override
@@ -63,9 +99,30 @@ public class OdsCell implements Cell {
 
 	@Override
 	public double getNumericCellValue() {
+		CellType type = getCellType();
+		if (type != CellType.NUMERIC && type != CellType.FORMULA) {
+			throw new IllegalStateException("Cannot get a NUMERIC value from a " + type + " cell");
+		}
 		Object val = range.getValue();
 		if (val instanceof Number) {
 			return ((Number) val).doubleValue();
+		}
+		if (val instanceof com.github.miachm.sods.OfficeCurrency) {
+			Double d = ((com.github.miachm.sods.OfficeCurrency) val).getValue();
+			return d != null ? d : 0.0;
+		}
+		if (val instanceof com.github.miachm.sods.OfficePercentage) {
+			Double d = ((com.github.miachm.sods.OfficePercentage) val).getValue();
+			return d != null ? d : 0.0;
+		}
+		if (val instanceof java.util.Date) {
+			return DateUtil.getExcelDate((java.util.Date) val);
+		}
+		if (val instanceof java.time.LocalDateTime) {
+			return DateUtil.getExcelDate(java.sql.Timestamp.valueOf((java.time.LocalDateTime) val));
+		}
+		if (val instanceof java.time.LocalDate) {
+			return DateUtil.getExcelDate(java.sql.Date.valueOf((java.time.LocalDate) val));
 		}
 		return 0.0;
 	}
@@ -74,13 +131,13 @@ public class OdsCell implements Cell {
 	public Date getDateCellValue() {
 		Object value = range.getValue();
 		if (value == null) return null;
-		if (value instanceof java.time.LocalDateTime) {
-			java.time.LocalDateTime ldt = (java.time.LocalDateTime) value;
-			return java.util.Date.from(ldt.atZone(java.time.ZoneId.systemDefault()).toInstant());
+		if (value instanceof LocalDateTime) {
+			LocalDateTime ldt = (LocalDateTime) value;
+			return Date.from(ldt.atZone(java.time.ZoneOffset.UTC).toInstant());
 		}
-		if (value instanceof java.time.LocalDate) {
-			java.time.LocalDate ld = (java.time.LocalDate) value;
-			return java.util.Date.from(ld.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+		if (value instanceof LocalDate) {
+			LocalDate ld = (LocalDate) value;
+			return Date.from(ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
 		}
 		if (value instanceof java.util.Date) {
 			return (Date) value;
@@ -88,15 +145,37 @@ public class OdsCell implements Cell {
 		if (value instanceof Number) {
 			return org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
 		}
+		if (value instanceof String) {
+			String s = ((String) value).trim();
+			if (s.isEmpty()) return null;
+			try {
+				if (s.endsWith("Z") || s.contains("+")) {
+					java.time.Instant instant = java.time.Instant.parse(s);
+					return Date.from(instant);
+				} else if (s.contains("T")) {
+					LocalDateTime ldt = LocalDateTime.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+					return Date.from(ldt.atZone(java.time.ZoneOffset.UTC).toInstant());
+				} else {
+					LocalDate ld = LocalDate.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
+					return Date.from(ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
+				}
+			} catch (Exception e) {
+				// Not an ISO date string
+			}
+		}
 		return null;
 	}
 
 	@Override
 	public CellType getCellType() {
+		String formula = range.getFormula();
+		if (formula != null && !formula.isEmpty()) {
+			return CellType.FORMULA;
+		}
 		Object val = range.getValue();
 		if (val == null) return CellType.BLANK;
 		if (val instanceof String) return CellType.STRING;
-		if (val instanceof Number) return CellType.NUMERIC;
+		if (val instanceof Number || val instanceof com.github.miachm.sods.OfficeCurrency || val instanceof com.github.miachm.sods.OfficePercentage) return CellType.NUMERIC;
 		if (val instanceof Boolean) return CellType.BOOLEAN;
 		if (val instanceof java.time.LocalDateTime || val instanceof java.time.LocalDate || val instanceof java.util.Date) {
 			return CellType.NUMERIC;
@@ -140,15 +219,18 @@ public class OdsCell implements Cell {
 	@Override
 	public void setBlank() {
 		range.setValue(null);
+		range.setFormula(null);
 	}
 
 	@Override
 	public void setCellFormula(String formula) {
+		range.setFormula(formula);
 	}
 
 	@Override
 	public String getCellFormula() {
-		return "";
+		String formula = range.getFormula();
+		return formula == null ? "" : formula;
 	}
 
 	@Override
@@ -177,28 +259,55 @@ public class OdsCell implements Cell {
 	public void setCellValue(java.util.Calendar value) {
 		if (value != null) {
 			setCellValue(value.getTime());
+		} else {
+			setBlank();
 		}
 	}
 	@Override
 	public void setCellValue(RichTextString value) {
 		if (value != null) {
 			setCellValue(value.getString());
+		} else {
+			setBlank();
 		}
 	}
 	@Override
 	public void setCellValue(boolean value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 	@Override
 	public RichTextString getRichStringCellValue() {
-		return new org.apache.poi.xssf.usermodel.XSSFRichTextString(getStringCellValue());
+		return new OdsRichTextString(getStringCellValue());
 	}
 	@Override
-	public void removeCellComment() {}
+	public void removeCellComment() {
+		range.setAnnotation(null);
+	}
+
 	@Override
-	public Comment getCellComment() { return null; }
+	public Comment getCellComment() {
+		com.github.miachm.sods.OfficeAnnotation annotation = range.getAnnotation();
+		if (annotation != null) {
+			OdsComment comment = new OdsComment(annotation);
+			comment.setAddress(getAddress());
+			return comment;
+		}
+		return null;
+	}
+
 	@Override
-	public void setCellComment(Comment comment) {}
+	public void setCellComment(Comment comment) {
+		if (comment instanceof OdsComment) {
+			range.setAnnotation(((OdsComment) comment).getAnnotation());
+		} else if (comment != null) {
+			RichTextString rts = comment.getString();
+			String text = rts != null ? rts.getString() : "";
+			range.setAnnotation(new com.github.miachm.sods.OfficeAnnotation(text, java.time.LocalDateTime.now()));
+		} else {
+			range.setAnnotation(null);
+		}
+	}
 	@Override
 	public Hyperlink getHyperlink() { return null; }
 	@Override
@@ -221,11 +330,11 @@ public class OdsCell implements Cell {
 			return ((java.time.LocalDate) value).atStartOfDay();
 		}
 		if (value instanceof Date) {
-			return java.time.LocalDateTime.ofInstant(((Date) value).toInstant(), java.time.ZoneId.systemDefault());
+			return java.time.LocalDateTime.ofInstant(((Date) value).toInstant(), java.time.ZoneOffset.UTC);
 		}
 		if (value instanceof Number) {
 			Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
-			return java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneId.systemDefault());
+			return java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
 		}
 		return null;
 	}
@@ -241,8 +350,20 @@ public class OdsCell implements Cell {
 	}
 
 	@Override
-	public void removeFormula() {}
+	public void removeFormula() {
+		range.setFormula(null);
+	}
 
 	@Override
-	public CellType getCachedFormulaResultType() { return CellType.BLANK; }
+	public CellType getCachedFormulaResultType() {
+		Object val = range.getValue();
+		if (val == null) return CellType.BLANK;
+		if (val instanceof String) return CellType.STRING;
+		if (val instanceof Number || val instanceof com.github.miachm.sods.OfficeCurrency || val instanceof com.github.miachm.sods.OfficePercentage) return CellType.NUMERIC;
+		if (val instanceof Boolean) return CellType.BOOLEAN;
+		if (val instanceof java.time.LocalDateTime || val instanceof java.time.LocalDate || val instanceof java.util.Date) {
+			return CellType.NUMERIC;
+		}
+		return CellType.STRING;
+	}
 }

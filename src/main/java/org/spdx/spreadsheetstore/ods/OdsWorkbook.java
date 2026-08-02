@@ -14,7 +14,16 @@ import java.util.Iterator;
 import java.util.List;
 import com.github.miachm.sods.SpreadSheet;
 import org.apache.poi.ss.SpreadsheetVersion;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
+import org.apache.poi.ss.usermodel.DataFormat;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.Name;
+import org.apache.poi.ss.usermodel.PictureData;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.SheetVisibility;
+import org.apache.poi.ss.usermodel.Workbook;
 
 /**
  * Adapter for Apache POI {@link Workbook} over a SODS {@link com.github.miachm.sods.SpreadSheet}.
@@ -27,11 +36,21 @@ public class OdsWorkbook implements Workbook {
 	private final List<OdsFont> fonts = new ArrayList<>();
 	private final List<OdsCellStyle> styles = new ArrayList<>();
 	private final OdsCreationHelper creationHelper = new OdsCreationHelper(this);
+	private Row.MissingCellPolicy missingCellPolicy = Row.MissingCellPolicy.RETURN_NULL_AND_BLANK;
 
+	/**
+	 * Creates an empty ODS workbook.
+	 */
 	public OdsWorkbook() {
 		this.spreadSheet = new SpreadSheet();
 	}
 
+	/**
+	 * Reads an ODS workbook from an input stream.
+	 *
+	 * @param is Input stream containing the ODS document.
+	 * @throws IOException If an I/O error occurs while parsing.
+	 */
 	public OdsWorkbook(InputStream is) throws IOException {
 		this.spreadSheet = new SpreadSheet(is);
 		for (com.github.miachm.sods.Sheet sodsSheet : spreadSheet.getSheets()) {
@@ -39,7 +58,12 @@ public class OdsWorkbook implements Workbook {
 		}
 	}
 
-	public SpreadSheet getSpreadSheet() {
+	/**
+	 * Returns the underlying SODS SpreadSheet instance.
+	 *
+	 * @return The underlying SODS SpreadSheet.
+	 */
+	SpreadSheet getSpreadSheet() {
 		return this.spreadSheet;
 	}
 
@@ -63,6 +87,14 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public void setSheetOrder(String sheetname, int pos) {
+		int currentIndex = getSheetIndex(sheetname);
+		if (currentIndex >= 0 && pos >= 0 && pos < sheets.size()) {
+			OdsSheet sheet = sheets.remove(currentIndex);
+			sheets.add(pos, sheet);
+			com.github.miachm.sods.Sheet sodsSheet = sheet.getSodsSheet();
+			spreadSheet.deleteSheet(currentIndex);
+			spreadSheet.addSheet(sodsSheet, pos);
+		}
 	}
 
 	@Override
@@ -86,8 +118,11 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public int getSheetIndex(String name) {
+		if (name == null) {
+			return -1;
+		}
 		for (int i = 0; i < sheets.size(); i++) {
-			if (sheets.get(i).getSheetName().equalsIgnoreCase(name)) {
+			if (name.equalsIgnoreCase(sheets.get(i).getSheetName())) {
 				return i;
 			}
 		}
@@ -115,7 +150,27 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public Sheet cloneSheet(int sheetNum) {
-		throw new UnsupportedOperationException("OdsWorkbook: cloneSheet not implemented");
+		if (sheetNum < 0 || sheetNum >= sheets.size()) {
+			throw new IllegalArgumentException("Invalid sheet index: " + sheetNum);
+		}
+		OdsSheet srcSheet = sheets.get(sheetNum);
+		try {
+			com.github.miachm.sods.Sheet clonedSods = (com.github.miachm.sods.Sheet) srcSheet.getSodsSheet().clone();
+			String baseName = srcSheet.getSheetName();
+			String clonedName = baseName + " (2)";
+			int count = 2;
+			while (getSheetIndex(clonedName) != -1) {
+				count++;
+				clonedName = baseName + " (" + count + ")";
+			}
+			clonedSods.setName(clonedName);
+			spreadSheet.appendSheet(clonedSods);
+			OdsSheet newSheet = new OdsSheet(this, clonedSods);
+			sheets.add(newSheet);
+			return newSheet;
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException("Failed to clone sheet", e);
+		}
 	}
 
 	@Override
@@ -131,24 +186,25 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public Sheet getSheetAt(int index) {
-		if (index >= 0 && index < sheets.size()) {
-			return sheets.get(index);
+		if (index < 0 || index >= sheets.size()) {
+			throw new IllegalArgumentException("Sheet index (" + index + ") is out of range (0.." + (sheets.size() - 1) + ")");
 		}
-		return null;
+		return sheets.get(index);
 	}
 
 	@Override
 	public Sheet getSheet(String name) {
 		int index = getSheetIndex(name);
-		return index != -1 ? getSheetAt(index) : null;
+		return index != -1 ? sheets.get(index) : null;
 	}
 
 	@Override
 	public void removeSheetAt(int index) {
-		if (index >= 0 && index < sheets.size()) {
-			spreadSheet.deleteSheet(index);
-			sheets.remove(index);
+		if (index < 0 || index >= sheets.size()) {
+			throw new IllegalArgumentException("Sheet index (" + index + ") is out of range (0.." + (sheets.size() - 1) + ")");
 		}
+		spreadSheet.deleteSheet(index);
+		sheets.remove(index);
 	}
 
 	@Override
@@ -161,7 +217,10 @@ public class OdsWorkbook implements Workbook {
 	@Override
 	public Font findFont(boolean bold, short color, short fontHeight, String name, boolean italic, boolean strikeout, short typeOffset, byte underline) {
 		for (OdsFont font : fonts) {
-			if (font.getBold() == bold && font.getColor() == color && font.getFontHeight() == fontHeight && font.getFontName().equals(name)) {
+			if (font.getBold() == bold && font.getColor() == color && font.getFontHeight() == fontHeight 
+					&& font.getFontName().equals(name) && font.getItalic() == italic 
+					&& font.getStrikeout() == strikeout && font.getTypeOffset() == typeOffset 
+					&& font.getUnderline() == underline) {
 				return font;
 			}
 		}
@@ -213,6 +272,9 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public void close() throws IOException {
+		sheets.clear();
+		fonts.clear();
+		styles.clear();
 	}
 
 	@Override
@@ -241,6 +303,9 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public boolean isSheetHidden(int sheetNum) {
+		if (sheetNum >= 0 && sheetNum < sheets.size()) {
+			return sheets.get(sheetNum).getSodsSheet().isHidden();
+		}
 		return false;
 	}
 
@@ -251,14 +316,35 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public void setSheetHidden(int sheetNum, boolean hidden) {
+		if (sheetNum >= 0 && sheetNum < sheets.size()) {
+			com.github.miachm.sods.Sheet sodsSheet = sheets.get(sheetNum).getSodsSheet();
+			if (hidden) {
+				sodsSheet.hideSheet();
+			} else {
+				sodsSheet.showSheet();
+			}
+		}
 	}
 
 	@Override
 	public void setSheetVisibility(int sheetNum, SheetVisibility visibility) {
+		if (sheetNum >= 0 && sheetNum < sheets.size()) {
+			com.github.miachm.sods.Sheet sodsSheet = sheets.get(sheetNum).getSodsSheet();
+			if (visibility == SheetVisibility.HIDDEN || visibility == SheetVisibility.VERY_HIDDEN) {
+				sodsSheet.hideSheet();
+			} else {
+				sodsSheet.showSheet();
+			}
+		}
 	}
 
 	@Override
 	public SheetVisibility getSheetVisibility(int sheetNum) {
+		if (sheetNum >= 0 && sheetNum < sheets.size()) {
+			if (sheets.get(sheetNum).getSodsSheet().isHidden()) {
+				return SheetVisibility.HIDDEN;
+			}
+		}
 		return SheetVisibility.VISIBLE;
 	}
 
@@ -305,11 +391,13 @@ public class OdsWorkbook implements Workbook {
 	}
 
 	@Override
-	public void setMissingCellPolicy(Row.MissingCellPolicy missingCellPolicy) {}
+	public void setMissingCellPolicy(Row.MissingCellPolicy missingCellPolicy) {
+		this.missingCellPolicy = missingCellPolicy;
+	}
 
 	@Override
 	public Row.MissingCellPolicy getMissingCellPolicy() {
-		return Row.MissingCellPolicy.RETURN_NULL_AND_BLANK;
+		return missingCellPolicy;
 	}
 
 	@Override

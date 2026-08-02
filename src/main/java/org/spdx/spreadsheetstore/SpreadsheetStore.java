@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.TimeZone;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -70,7 +71,7 @@ import org.spdx.storage.simple.ExtendedSpdxStore;
 
 /**
  * SPDX Java Library store which serializes and deserializes to Microsoft Excel
- * Workbooks
+ * and OpenDocument Spreadsheet (ODS) Workbooks
  *
  * @author Gary O'Neall
  */
@@ -85,19 +86,18 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
-	private static final ThreadLocal<DateFormat> FORMAT = new ThreadLocal<DateFormat>() {
-		@Override
-		protected DateFormat initialValue() {
-			return new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
-		}
-	};
+	private static final ThreadLocal<DateFormat> FORMAT = ThreadLocal.withInitial(() -> {
+		DateFormat df = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
+		df.setTimeZone(TimeZone.getTimeZone("UTC"));
+		return df;
+	});
 
 	/**
 	 * Constructs an SPDX model store which serializes and deserializes to
-	 * Microsoft Excel Workbooks in a specified format
+	 * spreadsheets in a specified format (XLS, XLSX, or ODS)
 	 *
 	 * @param baseStore         SPDX model store for deserialization/serialization
-	 * @param spreadsheetFormat format type XLS or XLSX
+	 * @param spreadsheetFormat format type XLS, XLSX, or ODS
 	 */
 	public SpreadsheetStore(IModelStore baseStore, SpreadsheetFormatType spreadsheetFormat) {
 		super(baseStore);
@@ -468,7 +468,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 							pkg.addFile(file);
 						}
 					} else {
-						logger.warn("Can not add file "+file.getName()+" to package "+pkgId);
+						logger.warn("Can not add file "+(file != null ? file.getName() : fileId)+" to package "+pkgId);
 					}
 				}
 			}

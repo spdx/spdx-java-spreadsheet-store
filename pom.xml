@@ -8,7 +8,7 @@
 
   <name>spdx-spreadsheet-store</name>
   <url>http://github.com/spdx/spdx-spreadsheet-store</url>
-  <description>Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.</description>
+  <description>Stores SPDX documents in Microsoft Excel and OpenDocument Spreadsheet formats. Supports ODS, XLS, and XLSX file types.</description>
   <scm>
   	<url>https://github.com/spdx/spdx-java-spreadsheet-store</url>
   	<connection>scm:git:ssh://git@github.com:spdx/spdx-java-spreadsheet-store</connection>
@@ -159,7 +159,7 @@
     <dependency>
     	<groupId>org.apache.poi</groupId>
     	<artifactId>poi-ooxml</artifactId>
-    	<version>5.4.1</version>
+    	<version>5.5.1</version>
     </dependency>
     <dependency>
     	<groupId>com.github.miachm.sods</groupId>

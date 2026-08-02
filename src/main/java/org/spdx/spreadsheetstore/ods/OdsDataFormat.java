@@ -6,6 +6,7 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
+import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.DataFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,11 @@ public class OdsDataFormat implements DataFormat {
 	public short getFormat(String format) {
 		int index = formats.indexOf(format);
 		if (index == -1) {
-			index = formats.size();
+			int builtinIndex = BuiltinFormats.getBuiltinFormat(format);
+			if (builtinIndex != -1) {
+				return (short) builtinIndex;
+			}
+			index = formats.size() + 165;
 			formats.add(format);
 		}
 		return (short) index;
@@ -36,9 +41,12 @@ public class OdsDataFormat implements DataFormat {
 
 	@Override
 	public String getFormat(short index) {
+		if (index >= 165 && (index - 165) < formats.size()) {
+			return formats.get(index - 165);
+		}
 		if (index >= 0 && index < formats.size()) {
 			return formats.get(index);
 		}
-		return null;
+		return BuiltinFormats.getBuiltinFormat(index);
 	}
 }
