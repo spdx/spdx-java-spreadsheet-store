@@ -366,7 +366,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			PackageInfoSheet packageInfoSheet, ModelCopyManager copyManager,
 			Map<String, Collection<ExternalRef>> externalRefs,
 			Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
-		Map<String, String> fileIdToPkgId = new HashMap<>();
+		Map<String, List<String>> fileIdToPkgIds = new HashMap<>();
 		List<SpdxPackage> packages;
 		
 		try (@SuppressWarnings("unchecked")
@@ -379,14 +379,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			String pkgId = pkg.getId();
 			Collection<SpdxFile> files = pkg.getFiles();
 			for (SpdxFile file:files) {
-				String fileId = file.getId();
-				String pkgIdsForFile = fileIdToPkgId.get(fileId);
-				if (pkgIdsForFile == null) {
-					pkgIdsForFile = pkgId;
-				} else {
-					pkgIdsForFile = pkgIdsForFile + ", " + pkgId;
-				}
-				fileIdToPkgId.put(fileId, pkgIdsForFile);
+				fileIdToPkgIds.computeIfAbsent(file.getId(), k -> new ArrayList<>()).add(pkgId);
 			}
 			Collection<ExternalRef> pkgExternalRefs = pkg.getExternalRefs();
 			if (pkgExternalRefs != null && pkgExternalRefs.size() > 0) {
@@ -401,6 +394,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			if (annotations.size() > 0) {
 				allAnnotations.put(pkg.getId(), annotations);
 			}
+		}
+		Map<String, String> fileIdToPkgId = new HashMap<>();
+		for (Entry<String, List<String>> entry : fileIdToPkgIds.entrySet()) {
+			fileIdToPkgId.put(entry.getKey(), String.join(", ", entry.getValue()));
 		}
 		return fileIdToPkgId;
 	}
