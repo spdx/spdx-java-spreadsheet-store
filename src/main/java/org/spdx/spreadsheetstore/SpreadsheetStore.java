@@ -114,6 +114,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		this(baseStore, SpreadsheetFormatType.XLSX);
 	}
 	
+	/**
+	 * Serialize the default SPDX document model to an output stream.
+	 *
+	 * @param stream Output stream to write the serialized data.
+	 * @throws InvalidSPDXAnalysisException If the model is invalid or unsupported.
+	 * @throws IOException If an I/O error occurs.
+	 */
 	@Override
 	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		serialize(stream, null);
