@@ -20,8 +20,9 @@
  * <h2>Limitations</h2>
  * <p>
  * Custom cell data formatting (e.g., specific number formats and custom date
- * patterns) has limited support due to the underlying SODS library. SODS only
- * natively supports plain text ("@") or an ISO date format ("YYYY-MM-DD").
+ * patterns) has limited support due to the underlying SODS 1.10 library.
+ * SODS only natively supports plain text ("@") or an ISO date format
+ * ("YYYY-MM-DD").
  * </p>
  * <p>
  * Consequently, any target cell format representing a date is mapped to the

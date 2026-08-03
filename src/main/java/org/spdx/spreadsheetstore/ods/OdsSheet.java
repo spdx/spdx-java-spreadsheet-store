@@ -402,12 +402,22 @@ public class OdsSheet implements Sheet {
 	@Override
 	public AutoFilter setAutoFilter(CellRangeAddress range) { return null; }
 
+	/**
+	 * Data validation is not currently supported by the underlying
+	 * SODS 1.10 library.
+	 * This method acts as a no-op to maintain POI interface compatibility.
+	 */
 	@Override
 	public void addValidationData(DataValidation dataValidation) {}
 
 	@Override
 	public List<? extends DataValidation> getDataValidations() { return new ArrayList<>(); }
 
+	/**
+	 * Data validation helpers are not currently supported by the underlying
+	 * SODS 1.10 library.
+	 * Returns {@code null} to maintain POI interface compatibility.
+	 */
 	@Override
 	public DataValidationHelper getDataValidationHelper() { return null; }
 
