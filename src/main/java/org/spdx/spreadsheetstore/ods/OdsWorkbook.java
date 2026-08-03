@@ -277,11 +277,20 @@ public class OdsWorkbook implements Workbook {
 		styles.clear();
 	}
 
+	/**
+	 * Stub returning 0 for POI interface parity.
+	 * SODS attaches images per sheet;
+	 * pictures are not used in SPDX serializations.
+	 */
 	@Override
 	public int addPicture(byte[] pictureData, int format) {
 		return 0;
 	}
 
+	/**
+	 * Stub returning an empty list for POI interface parity;
+	 * pictures are not used in SPDX serializations.
+	 */
 	@Override
 	public List<? extends PictureData> getAllPictures() {
 		return new ArrayList<>();
