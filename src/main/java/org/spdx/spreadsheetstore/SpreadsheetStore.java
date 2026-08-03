@@ -30,12 +30,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.TimeZone;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -433,7 +435,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		// note - files need to be added before snippets
 		copyPerSnippetInfoFromSS(ss.getSnippetSheet(), document,  fileIdToFile);
 		copyAnnotationInfoFromSS(ss.getAnnotationsSheet(), document);
-		Map<String, List<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
+		Map<String, Set<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
 		// Note - the copy missing file contains should be after copying relationships
 		copyAnyMissingFileContains(ss.getPerFileSheet(), pkgIdToPackage, fileIdToFile, packageContainsFileIds);
 		return document;
@@ -454,7 +456,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private void copyAnyMissingFileContains(PerFileSheet perFileSheet,
 			Map<String, SpdxPackage> pkgIdToPackage,
 			Map<String, SpdxFile> fileIdToFile,
-			Map<String, List<String>> packageContainsFileIds) throws InvalidSPDXAnalysisException {
+			Map<String, Set<String>> packageContainsFileIds) throws InvalidSPDXAnalysisException {
 		int firstRow = perFileSheet.getFirstDataRow();
 		int numFiles = perFileSheet.getNumDataRows();
 		for (int i = 0; i < numFiles; i++) {
@@ -635,9 +637,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
 	 * @throws InvalidSPDXAnalysisException If the relationship information is invalid.
 	 */
-	private Map<String, List<String>> copyRelationshipInfoFromSS(
+	private Map<String, Set<String>> copyRelationshipInfoFromSS(
 			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
-		Map<String, List<String>> retval = new HashMap<>();
+		Map<String, Set<String>> retval = new HashMap<>();
 		int i = relationshipsSheet.getFirstDataRow();
 		Relationship relationship = relationshipsSheet.getRelationship(i);
 		String id = relationshipsSheet.getElmementId(i);
@@ -654,9 +656,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 					relationship.getRelationshipType().equals(RelationshipType.CONTAINS) && 
 					relationship.getRelatedSpdxElement().isPresent() && 
 					relationship.getRelatedSpdxElement().get() instanceof SpdxFile) {
-				List<String> fileIds = retval.get(mo.get().getId());
+				Set<String> fileIds = retval.get(mo.get().getId());
 				if (fileIds == null) {
-					fileIds = new ArrayList<>();
+					fileIds = new HashSet<>();
 					retval.put(mo.get().getId(), fileIds);
 				}
 				fileIds.add(relationship.getRelatedSpdxElement().get().getId());
