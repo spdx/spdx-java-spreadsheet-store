@@ -192,7 +192,8 @@ public class RelationshipsSheet extends AbstractSheet {
 		if (row == null) {
 			return null;
 		}
-		return row.getCell(ID_COL).getStringCellValue();
+		Cell cell = row.getCell(ID_COL);
+		return cell != null ? cell.getStringCellValue() : null;
 	}
 	
 	public Relationship getRelationship(int rowNum) throws SpreadsheetException {

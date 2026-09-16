@@ -1,0 +1,52 @@
+/*
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: 2026 SPDX Contributors
+ * SPDX-FileType: SOURCE
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package org.spdx.spreadsheetstore.ods;
+
+import org.apache.poi.ss.usermodel.BuiltinFormats;
+import org.apache.poi.ss.usermodel.DataFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Adapter for Apache POI {@link DataFormat} for ODS documents.
+ * <p>
+ * Note: The SODS library has limited support for custom data formats.
+ * It natively only supports plain text ("@") and an ISO date format
+ * ("YYYY-MM-DD"). As a result, exact POI format patterns are not matched in
+ * the ODS output. Any date formats will map to "YYYY-MM-DD" internally,
+ * while other formats remain unstyled.
+ * </p>
+ */
+public class OdsDataFormat implements DataFormat {
+
+	private final List<String> formats = new ArrayList<>();
+
+	@Override
+	public short getFormat(String format) {
+		int index = formats.indexOf(format);
+		if (index == -1) {
+			int builtinIndex = BuiltinFormats.getBuiltinFormat(format);
+			if (builtinIndex != -1) {
+				return (short) builtinIndex;
+			}
+			index = formats.size() + 165;
+			formats.add(format);
+		}
+		return (short) index;
+	}
+
+	@Override
+	public String getFormat(short index) {
+		if (index >= 165 && (index - 165) < formats.size()) {
+			return formats.get(index - 165);
+		}
+		if (index >= 0 && index < formats.size()) {
+			return formats.get(index);
+		}
+		return BuiltinFormats.getBuiltinFormat(index);
+	}
+}

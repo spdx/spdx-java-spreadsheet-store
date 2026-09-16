@@ -17,8 +17,9 @@ Create an instance of a store which implements the [SPDX Java Library Storage In
 
 Create an instance of `SpreadsheetStore(IModelStore baseStore, SpreadsheetFormatType spreadsheetFormat)` passing in the instance of a store created above along with the format.  The format is one of the following:
 
+- `ODS` - OpenDocument Spreadsheet format
 - `XLS` - Microsoft Excel 97 to 2003 Workbook format
-- `XLSX` - Microsoft Excel workbook format
+- `XLSX` - Microsoft Excel Workbook format
 
 ## Serializing and Deserializing
 

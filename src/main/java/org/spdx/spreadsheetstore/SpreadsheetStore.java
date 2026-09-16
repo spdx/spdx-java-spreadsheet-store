@@ -30,11 +30,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.TimeZone;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,7 +73,7 @@ import org.spdx.storage.simple.ExtendedSpdxStore;
 
 /**
  * SPDX Java Library store which serializes and deserializes to Microsoft Excel
- * Workbooks
+ * and OpenDocument Spreadsheet (ODS) Workbooks
  *
  * @author Gary O'Neall
  */
@@ -81,7 +84,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	/**
 	 * Enum for the spreadsheet format type
 	 */
-	public enum SpreadsheetFormatType {XLS, XLSX};
+	public enum SpreadsheetFormatType {ODS, XLS, XLSX};
 
 	private SpreadsheetFormatType spreadsheetFormat;
 	
@@ -89,10 +92,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 
 	/**
 	 * Constructs an SPDX model store which serializes and deserializes to
-	 * Microsoft Excel Workbooks in a specified format
+	 * spreadsheets in a specified format (XLS, XLSX, or ODS)
 	 *
 	 * @param baseStore         SPDX model store for deserialization/serialization
-	 * @param spreadsheetFormat format type XLS or XLSX
+	 * @param spreadsheetFormat format type XLS, XLSX, or ODS
 	 */
 	public SpreadsheetStore(IModelStore baseStore, SpreadsheetFormatType spreadsheetFormat) {
 		super(baseStore);
@@ -109,6 +112,13 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		this(baseStore, SpreadsheetFormatType.XLSX);
 	}
 	
+	/**
+	 * Serialize the default SPDX document model to an output stream.
+	 *
+	 * @param stream Output stream to write the serialized data.
+	 * @throws InvalidSPDXAnalysisException If the model is invalid or unsupported.
+	 * @throws IOException If an I/O error occurs.
+	 */
 	@Override
 	public void serialize(OutputStream stream) throws InvalidSPDXAnalysisException, IOException {
 		serialize(stream, null);
@@ -354,7 +364,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			PackageInfoSheet packageInfoSheet, ModelCopyManager copyManager,
 			Map<String, Collection<ExternalRef>> externalRefs,
 			Map<String, Collection<Relationship>> allRelationships, Map<String, Collection<Annotation>> allAnnotations) throws InvalidSPDXAnalysisException {
-		Map<String, String> fileIdToPkgId = new HashMap<>();
+		Map<String, List<String>> fileIdToPkgIds = new HashMap<>();
 		List<SpdxPackage> packages;
 		
 		try (@SuppressWarnings("unchecked")
@@ -367,14 +377,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			String pkgId = pkg.getId();
 			Collection<SpdxFile> files = pkg.getFiles();
 			for (SpdxFile file:files) {
-				String fileId = file.getId();
-				String pkgIdsForFile = fileIdToPkgId.get(fileId);
-				if (pkgIdsForFile == null) {
-					pkgIdsForFile = pkgId;
-				} else {
-					pkgIdsForFile = pkgIdsForFile + ", " + pkgId;
-				}
-				fileIdToPkgId.put(fileId, pkgIdsForFile);
+				fileIdToPkgIds.computeIfAbsent(file.getId(), k -> new ArrayList<>()).add(pkgId);
 			}
 			Collection<ExternalRef> pkgExternalRefs = pkg.getExternalRefs();
 			if (pkgExternalRefs != null && pkgExternalRefs.size() > 0) {
@@ -389,6 +392,10 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 			if (annotations.size() > 0) {
 				allAnnotations.put(pkg.getId(), annotations);
 			}
+		}
+		Map<String, String> fileIdToPkgId = new HashMap<>();
+		for (Entry<String, List<String>> entry : fileIdToPkgIds.entrySet()) {
+			fileIdToPkgId.put(entry.getKey(), String.join(", ", entry.getValue()));
 		}
 		return fileIdToPkgId;
 	}
@@ -424,7 +431,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 		// note - files need to be added before snippets
 		copyPerSnippetInfoFromSS(ss.getSnippetSheet(), document,  fileIdToFile);
 		copyAnnotationInfoFromSS(ss.getAnnotationsSheet(), document);
-		Map<String, List<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
+		Map<String, Set<String>> packageContainsFileIds = copyRelationshipInfoFromSS(ss.getRelationshipsSheet(), document);
 		// Note - the copy missing file contains should be after copying relationships
 		copyAnyMissingFileContains(ss.getPerFileSheet(), pkgIdToPackage, fileIdToFile, packageContainsFileIds);
 		return document;
@@ -445,7 +452,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private void copyAnyMissingFileContains(PerFileSheet perFileSheet,
 			Map<String, SpdxPackage> pkgIdToPackage,
 			Map<String, SpdxFile> fileIdToFile,
-			Map<String, List<String>> packageContainsFileIds) throws InvalidSPDXAnalysisException {
+			Map<String, Set<String>> packageContainsFileIds) throws InvalidSPDXAnalysisException {
 		int firstRow = perFileSheet.getFirstDataRow();
 		int numFiles = perFileSheet.getNumDataRows();
 		for (int i = 0; i < numFiles; i++) {
@@ -463,7 +470,7 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 							pkg.addFile(file);
 						}
 					} else {
-						logger.warn("Can not add file "+file.getName()+" to package "+pkgId);
+						logger.warn("Can not add file "+(file != null ? file.getName() : fileId)+" to package "+pkgId);
 					}
 				}
 			}
@@ -626,9 +633,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	 * @throws SpreadsheetException If an error occurs while reading the spreadsheet.
 	 * @throws InvalidSPDXAnalysisException If the relationship information is invalid.
 	 */
-	private Map<String, List<String>> copyRelationshipInfoFromSS(
+	private Map<String, Set<String>> copyRelationshipInfoFromSS(
 			RelationshipsSheet relationshipsSheet, SpdxDocument analysis) throws SpreadsheetException, InvalidSPDXAnalysisException {
-		Map<String, List<String>> retval = new HashMap<>();
+		Map<String, Set<String>> retval = new HashMap<>();
 		int i = relationshipsSheet.getFirstDataRow();
 		Relationship relationship = relationshipsSheet.getRelationship(i);
 		String id = relationshipsSheet.getElmementId(i);
@@ -645,9 +652,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 					relationship.getRelationshipType().equals(RelationshipType.CONTAINS) && 
 					relationship.getRelatedSpdxElement().isPresent() && 
 					relationship.getRelatedSpdxElement().get() instanceof SpdxFile) {
-				List<String> fileIds = retval.get(mo.get().getId());
+				Set<String> fileIds = retval.get(mo.get().getId());
 				if (fileIds == null) {
-					fileIds = new ArrayList<>();
+					fileIds = new HashSet<>();
 					retval.put(mo.get().getId(), fileIds);
 				}
 				fileIds.add(relationship.getRelatedSpdxElement().get().getId());

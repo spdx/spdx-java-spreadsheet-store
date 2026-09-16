@@ -195,7 +195,8 @@ public class AnnotationsSheet extends AbstractSheet {
 		if (row == null) {
 			return null;
 		}
-		return row.getCell(ID_COL).getStringCellValue();
+		Cell cell = row.getCell(ID_COL);
+		return cell != null ? cell.getStringCellValue() : null;
 	}
 
 	/**

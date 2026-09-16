@@ -8,7 +8,7 @@
 
   <name>spdx-spreadsheet-store</name>
   <url>http://github.com/spdx/spdx-spreadsheet-store</url>
-  <description>Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.</description>
+  <description>Stores SPDX documents in Microsoft Excel and OpenDocument Spreadsheet formats. Supports ODS, XLS, and XLSX file types.</description>
   <scm>
   	<url>https://github.com/spdx/spdx-java-spreadsheet-store</url>
   	<connection>scm:git:ssh://git@github.com:spdx/spdx-java-spreadsheet-store</connection>
@@ -35,7 +35,7 @@
     <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     <sonar.organization>spdx</sonar.organization>
     <sonar.projectKey>spdx-spreadsheet-store</sonar.projectKey>
-    <dependency-check-maven.version>12.2.2</dependency-check-maven.version>
+    <dependency-check-maven.version>13.0.0</dependency-check-maven.version>
   </properties>
   <developers>
 	<developer>
@@ -149,7 +149,7 @@
     <dependency>
     	<groupId>org.spdx</groupId>
     	<artifactId>java-spdx-library</artifactId>
-    	<version>2.0.4</version>
+    	<version>2.0.5</version>
     </dependency>
     <dependency>
     	<groupId>org.apache.poi</groupId>
@@ -159,7 +159,12 @@
     <dependency>
     	<groupId>org.apache.poi</groupId>
     	<artifactId>poi-ooxml</artifactId>
-    	<version>5.4.1</version>
+    	<version>5.5.1</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.github.miachm.sods</groupId>
+    	<artifactId>SODS</artifactId>
+    	<version>1.10.1</version>
     </dependency>
   </dependencies>
   <build>
@@ -206,7 +211,7 @@
 		<plugin>
 			<groupId>org.apache.maven.plugins</groupId>
 			<artifactId>maven-compiler-plugin</artifactId>
-			<version>3.15.0</version>
+			<version>3.16.0</version>
 			<configuration>
 				<source>1.8</source>
 				<target>1.8</target>
