@@ -1,1 +1,1 @@
-tagSearchIndex = [{"l":"Constant Field Values","h":"","u":"constant-values.html"},{"l":"Serialized Form","h":"","u":"serialized-form.html"}];updateSearchResults();
+tagSearchIndex = [{"l":"Constant Field Values","h":"","u":"constant-values.html"},{"l":"Limitations","h":"package org.spdx.spreadsheetstore.ods","d":"Section","u":"org/spdx/spreadsheetstore/ods/package-summary.html#limitations-heading"},{"l":"Serialized Form","h":"","u":"serialized-form.html"}];updateSearchResults();

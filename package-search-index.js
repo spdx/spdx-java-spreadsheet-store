@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"org.spdx.spreadsheetstore"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"org.spdx.spreadsheetstore"},{"l":"org.spdx.spreadsheetstore.ods"}];updateSearchResults();
