@@ -19,8 +19,6 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -146,8 +144,7 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	 */
 	protected Date getDataCellDateValue(int colNum, String fieldName) throws SpreadsheetException {
 		Cell cell = getDataRow().getCell(colNum);
-		LocalDateTime value = getCellLocalDateTimeUtc(cell, fieldName);
-		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
+		return fromUtcLocalDateTime(getCellLocalDateTimeUtc(cell, fieldName));
 	}
 
 	/**

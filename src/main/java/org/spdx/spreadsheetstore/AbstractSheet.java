@@ -130,16 +130,19 @@ public abstract class AbstractSheet {
 	/**
 	 * Parse an SPDX UTC date string into a zone-less LocalDateTime.
 	 *
-	 * @param value SPDX UTC date string
+	 * @param value SPDX UTC date string, may be null
 	 * @param fieldName Field name used in the exception message
-	 * @return Parsed LocalDateTime
+	 * @return Parsed LocalDateTime, or null if value is null
 	 * @throws SpreadsheetException If value cannot be parsed as an SPDX UTC date
 	 */
 	protected static LocalDateTime parseUtcDate(String value, String fieldName) throws SpreadsheetException {
+		if (value == null) {
+			return null;
+		}
 		try {
 			return SPDX_UTC_DATE_FORMAT.parse(value, LocalDateTime::from);
 		} catch (DateTimeParseException e) {
-			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse");
+			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
 		}
 	}
 
@@ -151,6 +154,16 @@ public abstract class AbstractSheet {
 	 */
 	protected static LocalDateTime toUtcLocalDateTime(Date value) {
 		return value == null ? null : LocalDateTime.ofInstant(value.toInstant(), ZoneOffset.UTC);
+	}
+
+	/**
+	 * Convert a zone-less UTC LocalDateTime back to a Date.
+	 *
+	 * @param value LocalDateTime to convert, may be null
+	 * @return Date value, or null if value is null
+	 */
+	protected static Date fromUtcLocalDateTime(LocalDateTime value) {
+		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
 	}
 
 	// Default style for cells

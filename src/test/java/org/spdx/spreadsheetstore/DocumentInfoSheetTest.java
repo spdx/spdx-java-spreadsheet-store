@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -162,11 +163,7 @@ public class DocumentInfoSheetTest extends TestCase {
 
 	// Regression test: setCreated(null) must blank the cell, not NPE dereferencing a null Date.
 	public void testSetCreatedNullAcrossFormats() throws SpreadsheetException {
-		java.util.List<java.util.function.Supplier<Workbook>> workbookFactories = Arrays.asList(
-				HSSFWorkbook::new, // .xls
-				org.apache.poi.xssf.usermodel.XSSFWorkbook::new, // .xlsx
-				org.spdx.spreadsheetstore.ods.OdsWorkbook::new // .ods
-		);
+		java.util.List<java.util.function.Supplier<Workbook>> workbookFactories = SpreadsheetTestUtils.WORKBOOK_FACTORIES;
 		for (java.util.function.Supplier<Workbook> workbookFactory : workbookFactories) {
 			Workbook wb = workbookFactory.get();
 			DocumentInfoSheet.create(wb, "Origins", DOCUMENT_URI);

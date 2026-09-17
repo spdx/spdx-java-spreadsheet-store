@@ -236,6 +236,8 @@ public class AnnotationsSheet extends AbstractSheet {
 			if (date == null) {
 				throw new SpreadsheetException("Invalid annotation date - unable to parse as a date");
 			}
+		} else {
+			throw new SpreadsheetException("Invalid annotation date - unable to parse as a date");
 		}
 		String annotator = null;
 		Cell annotatorCell = row.getCell(ANNOTATOR_COL);

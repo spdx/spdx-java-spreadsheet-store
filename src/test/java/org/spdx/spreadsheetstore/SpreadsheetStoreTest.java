@@ -672,6 +672,7 @@ public class SpreadsheetStoreTest extends TestCase {
 		try {
 			for (String timeZoneId : testTimeZoneIds) {
 				TimeZone.setDefault(TimeZone.getTimeZone(timeZoneId));
+				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.XLS, ".xls", timeZoneId);
 				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.XLSX, ".xlsx", timeZoneId);
 				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.ODS, ".ods", timeZoneId);
 			}

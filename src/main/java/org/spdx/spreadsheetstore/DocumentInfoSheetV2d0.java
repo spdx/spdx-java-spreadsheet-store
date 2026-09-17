@@ -19,7 +19,6 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -380,7 +379,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		if (created == null) {
 			throw(new SpreadsheetException("Missing created date"));
 		}
-		setCreated(Date.from(parseUtcDate(created, "created date").toInstant(ZoneOffset.UTC)));
+		setCreated(fromUtcLocalDateTime(parseUtcDate(created, "created date")));
 		// Document comments
 		Optional<String> docComment;
 		try {

@@ -27,14 +27,12 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.ModelRegistry;
@@ -53,7 +51,6 @@ import org.spdx.library.model.v2.license.DisjunctiveLicenseSet;
 import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoneLicense;
 import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
-import org.spdx.spreadsheetstore.ods.OdsWorkbook;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -201,30 +198,16 @@ public class PackageInfoSheetTest extends TestCase {
 	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
 	// UTC instants at a US Eastern DST transition boundary, where a local-wall-clock
 	// conversion resolves a nonexistent or ambiguous local time inconsistently.
-	public void testReleaseBuiltValidUntilDatesAtDstTransitions() throws InvalidSPDXAnalysisException, SpreadsheetException {
+	public void testReleaseBuiltValidUntilDatesAtDstTransitions() throws Exception {
 		String[] dstTransitionDates = new String[] {
 				"2013-03-10T07:30:00Z", // spring-forward gap: local 02:30 EST never occurs
 				"2013-11-03T05:30:00Z", // fall-back overlap, 1st pass: local 01:30 EDT
 				"2013-11-03T06:30:00Z" // fall-back overlap, 2nd pass: local 01:30 EST - same wall clock, different instant
 		};
-		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
-				HSSFWorkbook::new, // .xls
-				XSSFWorkbook::new, // .xlsx
-				OdsWorkbook::new // .ods
-		);
-		TimeZone originalDefault = TimeZone.getDefault();
-		try {
-			TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+		SpreadsheetTestUtils.withDefaultTimeZone("America/New_York", () -> {
 			for (String testDate : dstTransitionDates) {
-				for (Supplier<Workbook> workbookFactory : workbookFactories) {
-					AnyLicenseInfo license = new SpdxNoneLicense();
-					SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
-							modelStore.getNextId(IdType.Anonymous), copyManager, true);
-					verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
-					SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-" + testDate.hashCode(),
-							copyManager, "decname", license, "dec-copyright", license)
-							.setDownloadLocation("NOASSERTION")
-							.setPackageVerificationCode(verificationCode)
+				for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+					SpdxPackage pkgInfo = newTestPackageBuilder(testDate.hashCode())
 							.setReleaseDate(testDate)
 							.setBuiltDate(testDate)
 							.setValidUntilDate(testDate)
@@ -243,41 +226,26 @@ public class PackageInfoSheetTest extends TestCase {
 					assertEquals("validUntilDate for " + context, testDate, result.getValidUntilDate().get());
 				}
 			}
-		} finally {
-			TimeZone.setDefault(originalDefault);
-		}
+		});
 	}
 
 	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
 	// A malformed date cell must raise SpreadsheetException consistently across formats,
 	// not be silently dropped in some formats and rejected in others.
 	public void testInvalidReleaseDateThrowsSpreadsheetExceptionAcrossFormats() throws InvalidSPDXAnalysisException {
-		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
-				HSSFWorkbook::new, // .xls
-				XSSFWorkbook::new, // .xlsx
-				OdsWorkbook::new // .ods
-		);
 		// garbage string, and a wrong-typed (boolean) cell - both must be rejected, not dropped
 		List<java.util.function.Consumer<Cell>> corruptors = Arrays.asList(
 				cell -> cell.setCellValue("not-a-date"),
 				cell -> cell.setCellValue(true)
 		);
-		for (Supplier<Workbook> workbookFactory : workbookFactories) {
+		for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
 			for (java.util.function.Consumer<Cell> corruptor : corruptors) {
 				Workbook wb = workbookFactory.get();
 				PackageInfoSheet.create(wb, "Package Info");
 				PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
 						SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
 
-				AnyLicenseInfo license = new SpdxNoneLicense();
-				SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
-						modelStore.getNextId(IdType.Anonymous), copyManager, true);
-				verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
-				SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-Invalid",
-						copyManager, "decname", license, "dec-copyright", license)
-						.setDownloadLocation("NOASSERTION")
-						.setPackageVerificationCode(verificationCode)
-						.build();
+				SpdxPackage pkgInfo = newTestPackageBuilder("Invalid").build();
 				pkgInfoSheet.add(pkgInfo);
 
 				Row row = pkgInfoSheet.sheet.getRow(1);
@@ -297,26 +265,13 @@ public class PackageInfoSheetTest extends TestCase {
 	// A cell holding an out-of-range numeric value (not a valid Excel date, e.g. negative) is
 	// treated as absent rather than an error, matching POI's own null-for-invalid-serial contract.
 	public void testOutOfRangeNumericReleaseDateTreatedAsAbsentAcrossFormats() throws InvalidSPDXAnalysisException, SpreadsheetException {
-		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
-				HSSFWorkbook::new, // .xls
-				XSSFWorkbook::new, // .xlsx
-				OdsWorkbook::new // .ods
-		);
-		for (Supplier<Workbook> workbookFactory : workbookFactories) {
+		for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
 			Workbook wb = workbookFactory.get();
 			PackageInfoSheet.create(wb, "Package Info");
 			PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
 					SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
 
-			AnyLicenseInfo license = new SpdxNoneLicense();
-			SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
-					modelStore.getNextId(IdType.Anonymous), copyManager, true);
-			verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
-			SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-NegativeDate",
-					copyManager, "decname", license, "dec-copyright", license)
-					.setDownloadLocation("NOASSERTION")
-					.setPackageVerificationCode(verificationCode)
-					.build();
+			SpdxPackage pkgInfo = newTestPackageBuilder("NegativeDate").build();
 			pkgInfoSheet.add(pkgInfo);
 
 			Row row = pkgInfoSheet.sheet.getRow(1);
@@ -325,6 +280,17 @@ public class PackageInfoSheetTest extends TestCase {
 			SpdxPackage result = pkgInfoSheet.getPackages().get(0);
 			assertFalse("[format=" + wb.getClass().getSimpleName() + "]", result.getReleaseDate().isPresent());
 		}
+	}
+
+	private SpdxPackageBuilder newTestPackageBuilder(Object idSuffix) throws InvalidSPDXAnalysisException {
+		AnyLicenseInfo license = new SpdxNoneLicense();
+		SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
+		verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
+		return new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-" + idSuffix,
+				copyManager, "decname", license, "dec-copyright", license)
+				.setDownloadLocation("NOASSERTION")
+				.setPackageVerificationCode(verificationCode);
 	}
 
 	private DisjunctiveLicenseSet createDisjunctiveLicenseSet(Collection<AnyLicenseInfo> disjunctiveLicenses) throws InvalidSPDXAnalysisException {

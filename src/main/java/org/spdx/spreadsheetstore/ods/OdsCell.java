@@ -69,12 +69,11 @@ public class OdsCell implements Cell {
 	@Override
 	public void setCellValue(Date value) {
 		range.setFormula(null);
-		if (value == null) {
-			range.setValue(null);
-		} else {
-			java.time.LocalDateTime ldt = java.time.LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneOffset.UTC);
-			range.setValue(ldt);
-		}
+		range.setValue(value == null ? null : toUtcLocalDateTime(value));
+	}
+
+	private static LocalDateTime toUtcLocalDateTime(Date value) {
+		return LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneOffset.UTC);
 	}
 
 	@Override
@@ -115,7 +114,7 @@ public class OdsCell implements Cell {
 			return d != null ? d : 0.0;
 		}
 		if (val instanceof java.util.Date) {
-			return DateUtil.getExcelDate(LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), java.time.ZoneOffset.UTC));
+			return DateUtil.getExcelDate(toUtcLocalDateTime((java.util.Date) val));
 		}
 		if (val instanceof java.time.LocalDateTime) {
 			return DateUtil.getExcelDate((java.time.LocalDateTime) val);
@@ -299,7 +298,7 @@ public class OdsCell implements Cell {
 			return ((LocalDate) value).atStartOfDay();
 		}
 		if (value instanceof Date) {
-			return LocalDateTime.ofInstant(((Date) value).toInstant(), java.time.ZoneOffset.UTC);
+			return toUtcLocalDateTime((Date) value);
 		}
 		if (value instanceof Number) {
 			return DateUtil.getLocalDateTime(((Number) value).doubleValue());
@@ -324,11 +323,13 @@ public class OdsCell implements Cell {
 
 	@Override
 	public void setCellValue(java.time.LocalDateTime value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 
 	@Override
 	public void setCellValue(java.time.LocalDate value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 
