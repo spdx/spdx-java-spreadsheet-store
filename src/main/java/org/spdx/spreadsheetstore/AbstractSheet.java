@@ -93,12 +93,11 @@ public abstract class AbstractSheet {
 			DateTimeFormatter.ofPattern(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).withZone(ZoneOffset.UTC);
 
 	/**
-	 * Read a date cell as a zone-less LocalDateTime, guarding against a cell whose type doesn't
-	 * hold a date (throws SpreadsheetException instead of letting IllegalStateException escape).
+	 * Read a date cell as a zone-less LocalDateTime; wraps a non-date cell type as SpreadsheetException.
 	 *
 	 * @param cell Cell to read, may be null
 	 * @param fieldName Field name used in the exception message
-	 * @return LocalDateTime value, or null if the cell is missing/blank/unparseable
+	 * @return LocalDateTime value, or null if the cell is missing, blank, or not a valid date
 	 * @throws SpreadsheetException If the cell type does not hold a date value
 	 */
 	protected static LocalDateTime getCellLocalDateTimeUtc(Cell cell, String fieldName) throws SpreadsheetException {

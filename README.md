@@ -3,9 +3,10 @@
 [![Maven Central Version](https://img.shields.io/maven-central/v/org.spdx/spdx-spreadsheet-store)](https://central.sonatype.com/artifact/org.spdx/spdx-spreadsheet-store)
 [![javadoc](https://javadoc.io/badge2/org.spdx/spdx-spreadsheet-store/javadoc.svg)](https://javadoc.io/doc/org.spdx/spdx-spreadsheet-store)
 
-Stores SPDX documents in Microsoft Excel formats.  Supports both XLS and XLSX file types.
+Stores SPDX documents in spreadsheet formats.
 
-This store supports serializing and deserializing files in XLS and XLSX spreadsheet formats.
+This store supports serializing and deserializing files in
+Microsoft Excel (XLS, XLSX) and OpenDocument Spreadsheet (ODS) formats.
 
 This library utilizes the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface) extending the `ExtendedSpdxStore` which allows for utilizing any underlying store which implements the [SPDX Java Library Storage Interface](https://github.com/spdx/Spdx-Java-Library#storage-interface).
 

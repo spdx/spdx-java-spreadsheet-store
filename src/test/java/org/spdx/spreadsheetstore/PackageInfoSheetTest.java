@@ -198,9 +198,8 @@ public class PackageInfoSheetTest extends TestCase {
 	}
 
 	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
-	// UTC instants on a US Eastern DST transition boundary. A conversion that goes through
-	// the JVM default-zone local wall clock (instead of UTC throughout) resolves a
-	// nonexistent or ambiguous local time inconsistently.
+	// UTC instants at a US Eastern DST transition boundary, where a local-wall-clock
+	// conversion resolves a nonexistent or ambiguous local time inconsistently.
 	public void testReleaseBuiltValidUntilDatesAtDstTransitions() throws InvalidSPDXAnalysisException, SpreadsheetException {
 		String[] dstTransitionDates = new String[] {
 				"2013-03-10T07:30:00Z", // spring-forward gap: local 02:30 EST never occurs

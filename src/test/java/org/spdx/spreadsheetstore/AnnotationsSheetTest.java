@@ -121,10 +121,8 @@ public class AnnotationsSheetTest extends TestCase {
 
 	/**
 	 * Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
-	 * <p>
-	 * {@link AnnotationsSheet#add} always writes the annotation date as a string, so the
-	 * fallback branch in {@link AnnotationsSheet#getAnnotation} that reads a numeric
-	 * (foreign-file, date-typed) cell is otherwise never exercised by any test.
+	 * {@link AnnotationsSheet#add} always writes a string date, so the numeric-cell fallback
+	 * in {@link AnnotationsSheet#getAnnotation} is otherwise never exercised.
 	 */
 	public void testGetAnnotationFromNumericDateCell() throws InvalidSPDXAnalysisException {
 		List<Supplier<Workbook>> workbookFactories = Arrays.asList(

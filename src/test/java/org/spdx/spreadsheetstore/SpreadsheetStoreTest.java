@@ -658,9 +658,7 @@ public class SpreadsheetStoreTest extends TestCase {
 	}
 
 	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
-	// SPDX date strings are always UTC ("Z" suffix); cell date conversions must not depend
-	// on the JVM default time zone. Sweeps adversarial zones: non-whole-hour offsets and a
-	// zone where DST is active on the test dates, to catch any reintroduction of that dependency.
+	// Sweeps non-whole-hour offsets and a DST-active zone to catch any JVM-default-zone dependency.
 	public void testSerializeDeserializeDateHandlingAcrossTimeZones() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
 		String[] testTimeZoneIds = new String[] {
 				"UTC",
@@ -706,11 +704,8 @@ public class SpreadsheetStoreTest extends TestCase {
 	/**
 	 * Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
 	 * <p>
-	 * The multi-timezone sweep above sets one default time zone per write+read pair, so a
-	 * conversion that depends on the JVM default time zone can still round-trip correctly by
-	 * having the same wrong offset cancel out on both ends. This test writes under one time
-	 * zone and reads under a different one - the scenario of a file exchanged between two
-	 * machines/processes - which a same-zone round trip cannot catch.
+	 * A same-zone write+read round trip can't catch a JVM-default-zone dependency (the wrong
+	 * offset cancels out on both ends). Write and read under different zones to catch it.
 	 */
 	public void testCreatedDateAcrossDifferentWriterAndReaderTimeZones() throws InvalidSPDXAnalysisException, IOException {
 		TimeZone originalDefault = TimeZone.getDefault();
