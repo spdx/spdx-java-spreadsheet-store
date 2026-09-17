@@ -1,7 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
  * SPDX-FileContributor: Arthit Suriyawongkul
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -19,6 +19,8 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -31,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -653,7 +656,103 @@ public class SpreadsheetStoreTest extends TestCase {
     		});
 		}
 	}
-	
+
+	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	// Sweeps non-whole-hour offsets and a DST-active zone to catch any JVM-default-zone dependency.
+	public void testSerializeDeserializeDateHandlingAcrossTimeZones() throws InvalidSPDXAnalysisException, IOException, SpdxCompareException {
+		String[] testTimeZoneIds = new String[] {
+				"UTC",
+				"America/New_York", // whole-hour offset, standard time on test dates
+				"Pacific/Kiritimati", // extreme offset +14:00
+				"Pacific/Marquesas", // half-hour offset -09:30
+				"Australia/Sydney", // whole-hour offset, DST active on test dates
+				"Asia/Kathmandu" // 45-minute offset
+		};
+		TimeZone originalDefault = TimeZone.getDefault();
+		try {
+			for (String timeZoneId : testTimeZoneIds) {
+				TimeZone.setDefault(TimeZone.getTimeZone(timeZoneId));
+				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.XLS, ".xls", timeZoneId);
+				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.XLSX, ".xlsx", timeZoneId);
+				assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType.ODS, ".ods", timeZoneId);
+			}
+		} finally {
+			TimeZone.setDefault(originalDefault);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertPackageAndCreationDatesRoundTrip(SpreadsheetFormatType format, String fileSuffix,
+			String timeZoneId) throws InvalidSPDXAnalysisException, IOException {
+		String documentUri = "http://newdoc/uri/" + fileSuffix.substring(1) + "/" + timeZoneId.replace('/', '_');
+		byte[] bytes = serializeCompareDocument(format, documentUri);
+
+		SpreadsheetStore resultStore = new SpreadsheetStore(new InMemSpdxStore());
+		try (ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
+			resultStore.deSerialize(in, false);
+		}
+		ModelCopyManager cm = new ModelCopyManager();
+		SpdxDocument doc = new SpdxDocument(resultStore, documentUri, cm, false);
+		SpdxPackage resultPkg = new SpdxPackage(resultStore, documentUri, "SPDXRef-Package", null, false);
+
+		String context = "[format=" + format + ", timeZone=" + timeZoneId + "]";
+		assertEquals(context + " created", "2010-01-29T18:30:22Z", doc.getCreationInfo().getCreated());
+		assertEquals(context + " releaseDate", "2012-01-29T18:30:22Z", resultPkg.getReleaseDate().get());
+		assertEquals(context + " builtDate", "2012-01-28T17:30:22Z", resultPkg.getBuiltDate().get());
+		assertEquals(context + " validUntilDate", "2014-01-29T13:30:22Z", resultPkg.getValidUntilDate().get());
+	}
+
+	/**
+	 * Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	 * <p>
+	 * A same-zone write+read round trip can't catch a JVM-default-zone dependency (the wrong
+	 * offset cancels out on both ends). Write and read under different zones to catch it.
+	 */
+	public void testCreatedDateAcrossDifferentWriterAndReaderTimeZones() throws InvalidSPDXAnalysisException, IOException {
+		TimeZone originalDefault = TimeZone.getDefault();
+		try {
+			TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+			String documentUri = "http://newdoc/uri/writer-reader-tz";
+			byte[] bytes = serializeCompareDocument(SpreadsheetFormatType.XLSX, documentUri);
+
+			TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+			SpreadsheetStore resultStore = new SpreadsheetStore(new InMemSpdxStore());
+			try (ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
+				resultStore.deSerialize(in, false);
+			}
+			SpdxDocument doc = new SpdxDocument(resultStore, documentUri, new ModelCopyManager(), false);
+			assertEquals("2010-01-29T18:30:22Z", doc.getCreationInfo().getCreated());
+		} finally {
+			TimeZone.setDefault(originalDefault);
+		}
+	}
+
+	private byte[] serializeCompareDocument(SpreadsheetFormatType format, String documentUri) throws InvalidSPDXAnalysisException, IOException {
+		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore(), format);
+		ModelCopyManager copyManager = new ModelCopyManager();
+		compareStore.getAllItems(compareDocument.getDocumentUri(), SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF).forEach(tv -> {
+			try {
+				copyManager.copy(sst, compareStore, tv.getObjectUri(),
+						CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		compareStore.getAllItems(compareDocument.getDocumentUri(), null).forEach(tv -> {
+			try {
+				if (!SpdxConstantsCompatV2.CLASS_EXTERNAL_DOC_REF.equals(tv.getType())) {
+					copyManager.copy(sst, compareStore, tv.getObjectUri(),
+							CompatibleModelStoreWrapper.LATEST_SPDX_2X_VERSION, documentUri + "#");
+				}
+			} catch (InvalidSPDXAnalysisException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		sst.serialize(out);
+		return out.toByteArray();
+	}
+
 	@SuppressWarnings("unchecked")
     public void testDeSerializeXls() throws InvalidSPDXAnalysisException, IOException {
 		SpreadsheetStore sst = new SpreadsheetStore(new InMemSpdxStore());

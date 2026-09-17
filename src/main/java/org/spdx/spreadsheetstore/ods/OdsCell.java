@@ -69,12 +69,11 @@ public class OdsCell implements Cell {
 	@Override
 	public void setCellValue(Date value) {
 		range.setFormula(null);
-		if (value == null) {
-			range.setValue(null);
-		} else {
-			java.time.LocalDateTime ldt = java.time.LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneOffset.UTC);
-			range.setValue(ldt);
-		}
+		range.setValue(value == null ? null : toUtcLocalDateTime(value));
+	}
+
+	private static LocalDateTime toUtcLocalDateTime(Date value) {
+		return LocalDateTime.ofInstant(value.toInstant(), java.time.ZoneOffset.UTC);
 	}
 
 	@Override
@@ -115,54 +114,21 @@ public class OdsCell implements Cell {
 			return d != null ? d : 0.0;
 		}
 		if (val instanceof java.util.Date) {
-			return DateUtil.getExcelDate((java.util.Date) val);
+			return DateUtil.getExcelDate(toUtcLocalDateTime((java.util.Date) val));
 		}
 		if (val instanceof java.time.LocalDateTime) {
-			return DateUtil.getExcelDate(java.sql.Timestamp.valueOf((java.time.LocalDateTime) val));
+			return DateUtil.getExcelDate((java.time.LocalDateTime) val);
 		}
 		if (val instanceof java.time.LocalDate) {
-			return DateUtil.getExcelDate(java.sql.Date.valueOf((java.time.LocalDate) val));
+			return DateUtil.getExcelDate((java.time.LocalDate) val);
 		}
 		return 0.0;
 	}
 
 	@Override
 	public Date getDateCellValue() {
-		Object value = range.getValue();
-		if (value == null) return null;
-		if (value instanceof LocalDateTime) {
-			LocalDateTime ldt = (LocalDateTime) value;
-			return Date.from(ldt.atZone(java.time.ZoneOffset.UTC).toInstant());
-		}
-		if (value instanceof LocalDate) {
-			LocalDate ld = (LocalDate) value;
-			return Date.from(ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
-		}
-		if (value instanceof java.util.Date) {
-			return (Date) value;
-		}
-		if (value instanceof Number) {
-			return org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
-		}
-		if (value instanceof String) {
-			String s = ((String) value).trim();
-			if (s.isEmpty()) return null;
-			try {
-				if (s.endsWith("Z") || s.contains("+")) {
-					java.time.Instant instant = java.time.Instant.parse(s);
-					return Date.from(instant);
-				} else if (s.contains("T")) {
-					LocalDateTime ldt = LocalDateTime.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-					return Date.from(ldt.atZone(java.time.ZoneOffset.UTC).toInstant());
-				} else {
-					LocalDate ld = LocalDate.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
-					return Date.from(ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
-				}
-			} catch (Exception e) {
-				// Not an ISO date string
-			}
-		}
-		return null;
+		LocalDateTime value = getLocalDateTimeCellValue();
+		return value == null ? null : Date.from(value.toInstant(java.time.ZoneOffset.UTC));
 	}
 
 	@Override
@@ -320,31 +286,50 @@ public class OdsCell implements Cell {
 	public void removeHyperlink() {}
 
 	@Override
-	public java.time.LocalDateTime getLocalDateTimeCellValue() {
+	public LocalDateTime getLocalDateTimeCellValue() {
 		Object value = range.getValue();
-		if (value instanceof java.time.LocalDateTime) {
-			return (java.time.LocalDateTime) value;
+		if (value == null) {
+			return null;
 		}
-		if (value instanceof java.time.LocalDate) {
-			return ((java.time.LocalDate) value).atStartOfDay();
+		if (value instanceof LocalDateTime) {
+			return (LocalDateTime) value;
+		}
+		if (value instanceof LocalDate) {
+			return ((LocalDate) value).atStartOfDay();
 		}
 		if (value instanceof Date) {
-			return java.time.LocalDateTime.ofInstant(((Date) value).toInstant(), java.time.ZoneOffset.UTC);
+			return toUtcLocalDateTime((Date) value);
 		}
 		if (value instanceof Number) {
-			Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
-			return java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
+			return DateUtil.getLocalDateTime(((Number) value).doubleValue());
 		}
-		return null;
+		if (value instanceof String) {
+			String s = ((String) value).trim();
+			if (s.isEmpty()) return null;
+			try {
+				if (s.endsWith("Z") || s.contains("+")) {
+					return LocalDateTime.ofInstant(java.time.Instant.parse(s), java.time.ZoneOffset.UTC);
+				} else if (s.contains("T")) {
+					return LocalDateTime.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+				} else {
+					return LocalDate.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE).atStartOfDay();
+				}
+			} catch (java.time.format.DateTimeParseException e) {
+				throw new IllegalStateException("Cannot get a date value from a non-date STRING cell");
+			}
+		}
+		throw new IllegalStateException("Cannot get a date value from a " + getCellType() + " cell");
 	}
 
 	@Override
 	public void setCellValue(java.time.LocalDateTime value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 
 	@Override
 	public void setCellValue(java.time.LocalDate value) {
+		range.setFormula(null);
 		range.setValue(value);
 	}
 

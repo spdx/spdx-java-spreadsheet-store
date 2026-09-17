@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Arthit Suriyawongkul
  * SPDX-FileCopyrightText: Copyright (c) 2026 Source Auditor Inc.
+ * SPDX-FileCopyrightText: 2026 SPDX Contributors
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -246,6 +247,74 @@ public class OdsWorkbookTest {
 		cell.setCellValue("2026-08-02T08:34:56Z");
 		java.util.Date date = cell.getDateCellValue();
 		org.junit.Assert.assertNotNull(date);
+	}
+
+	// Regression test: DateUtil.getLocalDateTime/getJavaDate return null for an invalid
+	// (e.g. negative) Excel serial value; getDateCellValue() must not NPE dereferencing it.
+	@Test
+	public void testInvalidNumericDateCellReturnsNullWithoutNpe() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Dates");
+		Row row = sheet.createRow(0);
+		Cell cell = row.createCell(0);
+		cell.setCellValue(-5.0);
+		org.junit.Assert.assertNull(cell.getLocalDateTimeCellValue());
+		org.junit.Assert.assertNull(cell.getDateCellValue());
+	}
+
+	// Regression test: real POI throws IllegalStateException reading a date from a
+	// BOOLEAN-typed cell; OdsCell must match that contract instead of silently returning null.
+	@Test(expected = IllegalStateException.class)
+	public void testBooleanCellThrowsOnLocalDateTimeRead() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Dates");
+		Row row = sheet.createRow(0);
+		Cell cell = row.createCell(0);
+		cell.setCellValue(true);
+		cell.getLocalDateTimeCellValue();
+	}
+
+	// Regression test: an unparseable date string must throw (not silently return null),
+	// so callers see a clear error instead of the field vanishing.
+	@Test(expected = IllegalStateException.class)
+	public void testGarbageDateStringThrows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Dates");
+		Row row = sheet.createRow(0);
+		Cell cell = row.createCell(0);
+		cell.setCellValue("not-a-date");
+		cell.getLocalDateTimeCellValue();
+	}
+
+	// Regression test: getNumericCellValue() on a LocalDateTime cell must be timezone-free.
+	// Timestamp.valueOf(LocalDateTime)-based conversion resolves a spring-forward-gap wall
+	// clock (a local time that never exists) inconsistently when the JVM default zone is the
+	// zone with the gap, vs. any other zone - DateUtil.getExcelDate(LocalDateTime) must not.
+	@Test
+	public void testNumericCellValueAtDstGapIsTimezoneInvariant() {
+		java.util.TimeZone originalDefault = java.util.TimeZone.getDefault();
+		try {
+			java.time.LocalDateTime gap = java.time.LocalDateTime.of(2013, 3, 10, 2, 30, 0);
+
+			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
+			double utcSerial = numericCellValueFor(gap);
+
+			java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/New_York"));
+			double nySerial = numericCellValueFor(gap);
+
+			assertEquals(utcSerial, nySerial, 0.0);
+		} finally {
+			java.util.TimeZone.setDefault(originalDefault);
+		}
+	}
+
+	private double numericCellValueFor(java.time.LocalDateTime value) {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Dates");
+		Row row = sheet.createRow(0);
+		Cell cell = row.createCell(0);
+		cell.setCellValue(value);
+		return cell.getNumericCellValue();
 	}
 
 	@Test

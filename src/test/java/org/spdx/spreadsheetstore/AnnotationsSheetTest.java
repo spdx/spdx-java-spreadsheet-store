@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -18,7 +19,13 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
@@ -105,6 +112,68 @@ public class AnnotationsSheetTest extends TestCase {
 		String ver = sheet.verify();
 		if (ver != null && !ver.isEmpty()){
 			fail(ver);
+		}
+	}
+
+	/**
+	 * Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	 * {@link AnnotationsSheet#add} always writes a string date, so the numeric-cell fallback
+	 * in {@link AnnotationsSheet#getAnnotation} is otherwise never exercised.
+	 */
+	public void testGetAnnotationFromNumericDateCell() throws Exception {
+		SpreadsheetTestUtils.withDefaultTimeZone("Pacific/Kiritimati", () -> {
+			for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+				Workbook wb = workbookFactory.get();
+				AnnotationsSheet.create(wb, "Annotations");
+				AnnotationsSheet sheet = new AnnotationsSheet(wb, "Annotations",
+						modelStore, DOCUMENT_URI, copyManager);
+
+				Annotation annotation = new Annotation(modelStore, DOCUMENT_URI,
+						modelStore.getNextId(IdType.Anonymous), copyManager, true);
+				annotation.setAnnotator("Person: Annotator1");
+				annotation.setAnnotationDate("2010-01-29T18:30:22Z");
+				annotation.setAnnotationType(AnnotationType.OTHER);
+				annotation.setComment("Comment1");
+				sheet.add(annotation, "SPDXRef-1");
+
+				Row row = sheet.sheet.getRow(1);
+				Cell dateCell = row.getCell(AnnotationsSheet.DATE_COL);
+				dateCell.setCellValue(LocalDateTime.of(2010, 1, 29, 18, 30, 22));
+
+				Annotation result = sheet.getAnnotation(1);
+				assertEquals("[format=" + wb.getClass().getSimpleName() + "]",
+						"2010-01-29T18:30:22Z", result.getAnnotationDate());
+			}
+		});
+	}
+
+	// Regression test: a date cell of a type other than STRING/NUMERIC (e.g. BOOLEAN) must raise
+	// SpreadsheetException, not silently produce a null annotation date.
+	public void testGetAnnotationFromBooleanDateCellThrows() throws InvalidSPDXAnalysisException {
+		for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+			Workbook wb = workbookFactory.get();
+			AnnotationsSheet.create(wb, "Annotations");
+			AnnotationsSheet sheet = new AnnotationsSheet(wb, "Annotations",
+					modelStore, DOCUMENT_URI, copyManager);
+
+			Annotation annotation = new Annotation(modelStore, DOCUMENT_URI,
+					modelStore.getNextId(IdType.Anonymous), copyManager, true);
+			annotation.setAnnotator("Person: Annotator1");
+			annotation.setAnnotationDate("2010-01-29T18:30:22Z");
+			annotation.setAnnotationType(AnnotationType.OTHER);
+			annotation.setComment("Comment1");
+			sheet.add(annotation, "SPDXRef-1");
+
+			Row row = sheet.sheet.getRow(1);
+			row.getCell(AnnotationsSheet.DATE_COL).setCellValue(true);
+
+			String context = "[format=" + wb.getClass().getSimpleName() + "]";
+			try {
+				sheet.getAnnotation(1);
+				fail("Expected SpreadsheetException " + context);
+			} catch (SpreadsheetException e) {
+				assertTrue(context + " message: " + e.getMessage(), e.getMessage().contains("Invalid annotation date"));
+			}
 		}
 	}
 

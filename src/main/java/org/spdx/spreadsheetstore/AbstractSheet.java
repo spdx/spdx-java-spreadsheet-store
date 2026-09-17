@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -24,9 +25,14 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.AttributedString;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -50,6 +56,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.storage.IModelStore;
@@ -84,6 +91,81 @@ public abstract class AbstractSheet {
 	 */
 	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+):\\s+(\\S+)");
 	
+	protected static final DateTimeFormatter SPDX_UTC_DATE_FORMAT =
+			DateTimeFormatter.ofPattern(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).withZone(ZoneOffset.UTC);
+
+	/**
+	 * Read a date cell as a zone-less LocalDateTime; wraps a non-date cell type as SpreadsheetException.
+	 *
+	 * @param cell Cell to read, may be null
+	 * @param fieldName Field name used in the exception message
+	 * @return LocalDateTime value, or null if the cell is missing/blank, or holds a numeric
+	 *         value that is not a valid Excel date
+	 * @throws SpreadsheetException If the cell holds a non-blank value that cannot be read as a date
+	 */
+	protected static LocalDateTime getCellLocalDateTimeUtc(Cell cell, String fieldName) throws SpreadsheetException {
+		if (cell == null || cell.getCellType() == CellType.BLANK) {
+			return null;
+		}
+		try {
+			return cell.getLocalDateTimeCellValue();
+		} catch (IllegalStateException e) {
+			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
+		}
+	}
+
+	/**
+	 * Read a date cell and format it as an SPDX UTC date string.
+	 *
+	 * @param cell Cell to read, may be null
+	 * @param fieldName Field name used in the exception message
+	 * @return SPDX UTC date string, or null if the cell has no date value
+	 * @throws SpreadsheetException If the cell holds a non-blank value that cannot be read as a date
+	 */
+	protected static String formatCellUtcDate(Cell cell, String fieldName) throws SpreadsheetException {
+		LocalDateTime value = getCellLocalDateTimeUtc(cell, fieldName);
+		return value == null ? null : SPDX_UTC_DATE_FORMAT.format(value);
+	}
+
+	/**
+	 * Parse an SPDX UTC date string into a zone-less LocalDateTime.
+	 *
+	 * @param value SPDX UTC date string, may be null
+	 * @param fieldName Field name used in the exception message
+	 * @return Parsed LocalDateTime, or null if value is null
+	 * @throws SpreadsheetException If value cannot be parsed as an SPDX UTC date
+	 */
+	protected static LocalDateTime parseUtcDate(String value, String fieldName) throws SpreadsheetException {
+		if (value == null) {
+			return null;
+		}
+		try {
+			return SPDX_UTC_DATE_FORMAT.parse(value, LocalDateTime::from);
+		} catch (DateTimeParseException e) {
+			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
+		}
+	}
+
+	/**
+	 * Convert a Date to a zone-less UTC LocalDateTime for storing in a date cell.
+	 *
+	 * @param value Date to convert, may be null
+	 * @return LocalDateTime value, or null if value is null
+	 */
+	protected static LocalDateTime toUtcLocalDateTime(Date value) {
+		return value == null ? null : LocalDateTime.ofInstant(value.toInstant(), ZoneOffset.UTC);
+	}
+
+	/**
+	 * Convert a zone-less UTC LocalDateTime back to a Date.
+	 *
+	 * @param value LocalDateTime to convert, may be null
+	 * @return Date value, or null if value is null
+	 */
+	protected static Date fromUtcLocalDateTime(LocalDateTime value) {
+		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
+	}
+
 	// Default style for cells
 	static final String FONT_NAME = "Arial";
 	protected static final short FONT_SIZE = (short)10*20;

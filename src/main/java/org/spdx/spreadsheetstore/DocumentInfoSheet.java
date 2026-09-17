@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -119,31 +120,31 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * Set the date value of a data cell.
+	 * Set the date value of a data cell. A null value blanks the cell.
 	 *
 	 * @param colNum Cell column number.
 	 * @param value Date value to set.
 	 */
 	protected void setDataCellDateValue(int colNum, Date value) {
 		Cell cell = getOrCreateDataCell(colNum);
-		cell.setCellValue(value);
+		if (value == null) {
+			cell.setBlank();
+			return;
+		}
+		cell.setCellValue(toUtcLocalDateTime(value));
 		cell.setCellStyle(dateStyle);
-		
 	}
 
 	/**
 	 * Retrieve the date value of a data cell
 	 *
 	 * @param colNum Cell column number.
+	 * @param fieldName Field name used in the exception message
 	 * @return Date value of the cell, or null if the cell is empty.
 	 */
-	protected Date getDataCellDateValue(int colNum) {
+	protected Date getDataCellDateValue(int colNum, String fieldName) throws SpreadsheetException {
 		Cell cell = getDataRow().getCell(colNum);
-		if (cell == null) {
-			return null;
-		} else {
-			return cell.getDateCellValue();
-		}
+		return fromUtcLocalDateTime(getCellLocalDateTimeUtc(cell, fieldName));
 	}
 
 	/**
@@ -204,8 +205,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	 * Retrieve the creation date of the SPDX document
 	 *
 	 * @return Date the SPDX document was created
+	 * @throws SpreadsheetException If the created date cell does not hold a valid date
 	 */
-	public abstract Date getCreated();
+	public abstract Date getCreated() throws SpreadsheetException;
 
 	/**
 	 * Retrieve the list of creators of the SPDX document

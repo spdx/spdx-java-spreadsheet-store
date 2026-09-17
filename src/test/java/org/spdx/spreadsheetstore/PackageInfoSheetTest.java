@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -25,8 +26,12 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
@@ -188,6 +193,104 @@ public class PackageInfoSheetTest extends TestCase {
 		assertTrue(pkgInfo2.equivalent(tstPkgInfo2));
 		assertEquals(pkgInfo2.getId(), tstPkgInfo2.getId());
 		assertEquals(2, pkgInfoSheet.getPackages().size());
+	}
+
+	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	// UTC instants at a US Eastern DST transition boundary, where a local-wall-clock
+	// conversion resolves a nonexistent or ambiguous local time inconsistently.
+	public void testReleaseBuiltValidUntilDatesAtDstTransitions() throws Exception {
+		String[] dstTransitionDates = new String[] {
+				"2013-03-10T07:30:00Z", // spring-forward gap: local 02:30 EST never occurs
+				"2013-11-03T05:30:00Z", // fall-back overlap, 1st pass: local 01:30 EDT
+				"2013-11-03T06:30:00Z" // fall-back overlap, 2nd pass: local 01:30 EST - same wall clock, different instant
+		};
+		SpreadsheetTestUtils.withDefaultTimeZone("America/New_York", () -> {
+			for (String testDate : dstTransitionDates) {
+				for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+					SpdxPackage pkgInfo = newTestPackageBuilder(testDate.hashCode())
+							.setReleaseDate(testDate)
+							.setBuiltDate(testDate)
+							.setValidUntilDate(testDate)
+							.build();
+
+					Workbook wb = workbookFactory.get();
+					PackageInfoSheet.create(wb, "Package Info");
+					PackageInfoSheet pkgInfoSheet = PackageInfoSheet.openVersion(wb, "Package Info",
+							SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+					pkgInfoSheet.add(pkgInfo);
+					SpdxPackage result = pkgInfoSheet.getPackages().get(0);
+
+					String context = "[format=" + wb.getClass().getSimpleName() + "] " + testDate;
+					assertEquals("releaseDate for " + context, testDate, result.getReleaseDate().get());
+					assertEquals("builtDate for " + context, testDate, result.getBuiltDate().get());
+					assertEquals("validUntilDate for " + context, testDate, result.getValidUntilDate().get());
+				}
+			}
+		});
+	}
+
+	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	// A malformed date cell must raise SpreadsheetException consistently across formats,
+	// not be silently dropped in some formats and rejected in others.
+	public void testInvalidReleaseDateThrowsSpreadsheetExceptionAcrossFormats() throws InvalidSPDXAnalysisException {
+		// garbage string, and a wrong-typed (boolean) cell - both must be rejected, not dropped
+		List<java.util.function.Consumer<Cell>> corruptors = Arrays.asList(
+				cell -> cell.setCellValue("not-a-date"),
+				cell -> cell.setCellValue(true)
+		);
+		for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+			for (java.util.function.Consumer<Cell> corruptor : corruptors) {
+				Workbook wb = workbookFactory.get();
+				PackageInfoSheet.create(wb, "Package Info");
+				PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
+						SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+
+				SpdxPackage pkgInfo = newTestPackageBuilder("Invalid").build();
+				pkgInfoSheet.add(pkgInfo);
+
+				Row row = pkgInfoSheet.sheet.getRow(1);
+				corruptor.accept(row.createCell(pkgInfoSheet.RELEASE_DATE_COL));
+
+				String context = "[format=" + wb.getClass().getSimpleName() + "]";
+				try {
+					pkgInfoSheet.getPackages();
+					fail("Expected SpreadsheetException " + context);
+				} catch (SpreadsheetException e) {
+					assertTrue(context + " message: " + e.getMessage(), e.getMessage().contains("Invalid release date"));
+				}
+			}
+		}
+	}
+
+	// A cell holding an out-of-range numeric value (not a valid Excel date, e.g. negative) is
+	// treated as absent rather than an error, matching POI's own null-for-invalid-serial contract.
+	public void testOutOfRangeNumericReleaseDateTreatedAsAbsentAcrossFormats() throws InvalidSPDXAnalysisException, SpreadsheetException {
+		for (Supplier<Workbook> workbookFactory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+			Workbook wb = workbookFactory.get();
+			PackageInfoSheet.create(wb, "Package Info");
+			PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
+					SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+
+			SpdxPackage pkgInfo = newTestPackageBuilder("NegativeDate").build();
+			pkgInfoSheet.add(pkgInfo);
+
+			Row row = pkgInfoSheet.sheet.getRow(1);
+			row.createCell(pkgInfoSheet.RELEASE_DATE_COL).setCellValue(-5.0);
+
+			SpdxPackage result = pkgInfoSheet.getPackages().get(0);
+			assertFalse("[format=" + wb.getClass().getSimpleName() + "]", result.getReleaseDate().isPresent());
+		}
+	}
+
+	private SpdxPackageBuilder newTestPackageBuilder(Object idSuffix) throws InvalidSPDXAnalysisException {
+		AnyLicenseInfo license = new SpdxNoneLicense();
+		SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
+				modelStore.getNextId(IdType.Anonymous), copyManager, true);
+		verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
+		return new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-" + idSuffix,
+				copyManager, "decname", license, "dec-copyright", license)
+				.setDownloadLocation("NOASSERTION")
+				.setPackageVerificationCode(verificationCode);
 	}
 
 	private DisjunctiveLicenseSet createDisjunctiveLicenseSet(Collection<AnyLicenseInfo> disjunctiveLicenses) throws InvalidSPDXAnalysisException {
