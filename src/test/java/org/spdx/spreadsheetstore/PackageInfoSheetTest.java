@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -256,6 +257,51 @@ public class PackageInfoSheetTest extends TestCase {
 				XSSFWorkbook::new, // .xlsx
 				OdsWorkbook::new // .ods
 		);
+		// garbage string, and a wrong-typed (boolean) cell - both must be rejected, not dropped
+		List<java.util.function.Consumer<Cell>> corruptors = Arrays.asList(
+				cell -> cell.setCellValue("not-a-date"),
+				cell -> cell.setCellValue(true)
+		);
+		for (Supplier<Workbook> workbookFactory : workbookFactories) {
+			for (java.util.function.Consumer<Cell> corruptor : corruptors) {
+				Workbook wb = workbookFactory.get();
+				PackageInfoSheet.create(wb, "Package Info");
+				PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
+						SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+
+				AnyLicenseInfo license = new SpdxNoneLicense();
+				SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
+						modelStore.getNextId(IdType.Anonymous), copyManager, true);
+				verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
+				SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-Invalid",
+						copyManager, "decname", license, "dec-copyright", license)
+						.setDownloadLocation("NOASSERTION")
+						.setPackageVerificationCode(verificationCode)
+						.build();
+				pkgInfoSheet.add(pkgInfo);
+
+				Row row = pkgInfoSheet.sheet.getRow(1);
+				corruptor.accept(row.createCell(pkgInfoSheet.RELEASE_DATE_COL));
+
+				String context = "[format=" + wb.getClass().getSimpleName() + "]";
+				try {
+					pkgInfoSheet.getPackages();
+					fail("Expected SpreadsheetException " + context);
+				} catch (SpreadsheetException e) {
+					assertTrue(context + " message: " + e.getMessage(), e.getMessage().contains("Invalid release date"));
+				}
+			}
+		}
+	}
+
+	// A cell holding an out-of-range numeric value (not a valid Excel date, e.g. negative) is
+	// treated as absent rather than an error, matching POI's own null-for-invalid-serial contract.
+	public void testOutOfRangeNumericReleaseDateTreatedAsAbsentAcrossFormats() throws InvalidSPDXAnalysisException, SpreadsheetException {
+		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
+				HSSFWorkbook::new, // .xls
+				XSSFWorkbook::new, // .xlsx
+				OdsWorkbook::new // .ods
+		);
 		for (Supplier<Workbook> workbookFactory : workbookFactories) {
 			Workbook wb = workbookFactory.get();
 			PackageInfoSheet.create(wb, "Package Info");
@@ -266,7 +312,7 @@ public class PackageInfoSheetTest extends TestCase {
 			SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
 					modelStore.getNextId(IdType.Anonymous), copyManager, true);
 			verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
-			SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-Invalid",
+			SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-NegativeDate",
 					copyManager, "decname", license, "dec-copyright", license)
 					.setDownloadLocation("NOASSERTION")
 					.setPackageVerificationCode(verificationCode)
@@ -274,15 +320,10 @@ public class PackageInfoSheetTest extends TestCase {
 			pkgInfoSheet.add(pkgInfo);
 
 			Row row = pkgInfoSheet.sheet.getRow(1);
-			row.createCell(pkgInfoSheet.RELEASE_DATE_COL).setCellValue("not-a-date");
+			row.createCell(pkgInfoSheet.RELEASE_DATE_COL).setCellValue(-5.0);
 
-			String context = "[format=" + wb.getClass().getSimpleName() + "]";
-			try {
-				pkgInfoSheet.getPackages();
-				fail("Expected SpreadsheetException " + context);
-			} catch (SpreadsheetException e) {
-				assertTrue(context + " message: " + e.getMessage(), e.getMessage().contains("Invalid release date"));
-			}
+			SpdxPackage result = pkgInfoSheet.getPackages().get(0);
+			assertFalse("[format=" + wb.getClass().getSimpleName() + "]", result.getReleaseDate().isPresent());
 		}
 	}
 

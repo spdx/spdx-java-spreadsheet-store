@@ -160,6 +160,23 @@ public class DocumentInfoSheetTest extends TestCase {
 		assertEquals(created.toString(), originsSheet.getCreated().toString());
 	}
 
+	// Regression test: setCreated(null) must blank the cell, not NPE dereferencing a null Date.
+	public void testSetCreatedNullAcrossFormats() throws SpreadsheetException {
+		java.util.List<java.util.function.Supplier<Workbook>> workbookFactories = Arrays.asList(
+				HSSFWorkbook::new, // .xls
+				org.apache.poi.xssf.usermodel.XSSFWorkbook::new, // .xlsx
+				org.spdx.spreadsheetstore.ods.OdsWorkbook::new // .ods
+		);
+		for (java.util.function.Supplier<Workbook> workbookFactory : workbookFactories) {
+			Workbook wb = workbookFactory.get();
+			DocumentInfoSheet.create(wb, "Origins", DOCUMENT_URI);
+			DocumentInfoSheet originsSheet = DocumentInfoSheet.openVersion(wb, "Origins", SpdxSpreadsheet.CURRENT_VERSION, modelStore, copyManager);
+			originsSheet.setCreated(new Date());
+			originsSheet.setCreated(null);
+			assertEquals("[format=" + wb.getClass().getSimpleName() + "]", null, originsSheet.getCreated());
+		}
+	}
+
 	public void testGetDocumentomment() throws SpreadsheetException {
 		Workbook wb = new HSSFWorkbook();
 		DocumentInfoSheet.create(wb, "Origins", DOCUMENT_URI);

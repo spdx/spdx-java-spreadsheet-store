@@ -19,11 +19,6 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -103,17 +98,6 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	static final int[] COLUMN_WIDTHS = new int[] {30, 17, 17, 30, 30, 30, 50, 50, 75, 60, 40, 30,
 		40, 40, 90, 50, 50, 50, 80, 80, 10, 50, 12, 20, 20, 20, 50};
 	
-	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
-
-	private static LocalDateTime toUtcLocalDateTime(Instant instant) {
-		return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
-	}
-
-	private static String readUtcDateCell(Cell cell, String fieldName) throws SpreadsheetException {
-		LocalDateTime value = getCellLocalDateTimeUtc(cell, fieldName);
-		return value == null ? null : DATE_FORMAT.format(value.toInstant(ZoneOffset.UTC));
-	}
-
 	/**
 	 * @param workbook
 	 * @param sheetName
@@ -392,31 +376,19 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		Optional<String> builtDate = pkgInfo.getBuiltDate();
 		if (builtDate.isPresent()) {
 			Cell cell = row.createCell(BUILT_DATE_COL);
-			try {
-				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(builtDate.get(), Instant::from)));
-			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid built date - unable to parse"));
-			}
+			cell.setCellValue(parseUtcDate(builtDate.get(), "built date"));
 			cell.setCellStyle(dateStyle);
 		}
 		Optional<String> releaseDate = pkgInfo.getReleaseDate();
 		if (releaseDate.isPresent()) {
 			Cell cell = row.createCell(RELEASE_DATE_COL);
-			try {
-				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(releaseDate.get(), Instant::from)));
-			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid release date - unable to parse"));
-			}
+			cell.setCellValue(parseUtcDate(releaseDate.get(), "release date"));
 			cell.setCellStyle(dateStyle);
 		}
 		Optional<String> validUntilDate = pkgInfo.getValidUntilDate();
 		if (validUntilDate.isPresent()) {
 			Cell cell = row.createCell(VALID_UNTIL_COL);
-			try {
-				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(validUntilDate.get(), Instant::from)));
-			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid valid until date - unable to parse"));
-			}
+			cell.setCellValue(parseUtcDate(validUntilDate.get(), "valid until date"));
 			cell.setCellStyle(dateStyle);
 		}
 	}
@@ -627,15 +599,15 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 				throw new SpreadsheetException("Invalid purpose: "+primaryPurposeCell.getStringCellValue());
 			}
 		}
-		String releaseDateValue = readUtcDateCell(row.getCell(RELEASE_DATE_COL), "release date");
+		String releaseDateValue = formatCellUtcDate(row.getCell(RELEASE_DATE_COL), "release date");
 		if (Objects.nonNull(releaseDateValue)) {
 			retval.setReleaseDate(releaseDateValue);
 		}
-		String builtDateValue = readUtcDateCell(row.getCell(BUILT_DATE_COL), "built date");
+		String builtDateValue = formatCellUtcDate(row.getCell(BUILT_DATE_COL), "built date");
 		if (Objects.nonNull(builtDateValue)) {
 			retval.setBuiltDate(builtDateValue);
 		}
-		String validUntilDateValue = readUtcDateCell(row.getCell(VALID_UNTIL_COL), "valid until date");
+		String validUntilDateValue = formatCellUtcDate(row.getCell(VALID_UNTIL_COL), "valid until date");
 		if (Objects.nonNull(validUntilDateValue)) {
 			retval.setValidUntilDate(validUntilDateValue);
 		}

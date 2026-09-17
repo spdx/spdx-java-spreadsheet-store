@@ -19,10 +19,6 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
@@ -59,8 +55,6 @@ public class AnnotationsSheet extends AbstractSheet {
 	static final boolean[] CENTER_NOWRAP = new boolean[] {true, false, true, false, true, false};
 
 	static final boolean[] REQUIRED = new boolean[] {true, true, true, true, true, false};
-	
-	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
 
 
 	/**
@@ -238,11 +232,10 @@ public class AnnotationsSheet extends AbstractSheet {
 		if (dateCell.getCellType() == CellType.STRING) {
 			date = dateCell.getStringCellValue();
 		} else if (dateCell.getCellType() == CellType.NUMERIC) {
-			LocalDateTime dateValue = getCellLocalDateTimeUtc(dateCell, "annotation date");
-			if (dateValue == null) {
+			date = formatCellUtcDate(dateCell, "annotation date");
+			if (date == null) {
 				throw new SpreadsheetException("Invalid annotation date - unable to parse as a date");
 			}
-			date = DATE_FORMAT.format(dateValue.toInstant(ZoneOffset.UTC));
 		}
 		String annotator = null;
 		Cell annotatorCell = row.getCell(ANNOTATOR_COL);

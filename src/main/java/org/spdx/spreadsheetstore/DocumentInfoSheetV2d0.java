@@ -19,10 +19,7 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,8 +87,6 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		true, false, false, false, false, false, false, true, false, false};
 	
 	private static Pattern EXTERNAL_DOC_REF_PATTERN = getExternalDocPattern();
-
-	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
 
 	public DocumentInfoSheetV2d0(Workbook workbook, String sheetName, String version, IModelStore modelStore, ModelCopyManager copyManager) throws SpreadsheetException {
 		super(workbook, sheetName, version, modelStore, copyManager);
@@ -224,7 +219,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 	}
 	
 	public Date getCreated() throws SpreadsheetException {
-		return getDataCellDateValue(CREATED_COL);
+		return getDataCellDateValue(CREATED_COL, "created date");
 	}
 	
 	public String getDataLicense() {
@@ -385,11 +380,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		if (created == null) {
 			throw(new SpreadsheetException("Missing created date"));
 		}
-		try {
-			setCreated(Date.from(DATE_FORMAT.parse(created, Instant::from)));
-		} catch (DateTimeParseException e) {
-			throw(new SpreadsheetException("Invalid created date - unable to parse"));
-		}
+		setCreated(Date.from(parseUtcDate(created, "created date").toInstant(ZoneOffset.UTC)));
 		// Document comments
 		Optional<String> docComment;
 		try {

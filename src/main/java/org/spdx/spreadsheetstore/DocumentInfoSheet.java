@@ -122,27 +122,31 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	}
 
 	/**
-	 * Set the date value of a data cell.
+	 * Set the date value of a data cell. A null value blanks the cell.
 	 *
 	 * @param colNum Cell column number.
 	 * @param value Date value to set.
 	 */
 	protected void setDataCellDateValue(int colNum, Date value) {
 		Cell cell = getOrCreateDataCell(colNum);
-		cell.setCellValue(LocalDateTime.ofInstant(value.toInstant(), ZoneOffset.UTC));
+		if (value == null) {
+			cell.setBlank();
+			return;
+		}
+		cell.setCellValue(toUtcLocalDateTime(value));
 		cell.setCellStyle(dateStyle);
-
 	}
 
 	/**
 	 * Retrieve the date value of a data cell
 	 *
 	 * @param colNum Cell column number.
+	 * @param fieldName Field name used in the exception message
 	 * @return Date value of the cell, or null if the cell is empty.
 	 */
-	protected Date getDataCellDateValue(int colNum) throws SpreadsheetException {
+	protected Date getDataCellDateValue(int colNum, String fieldName) throws SpreadsheetException {
 		Cell cell = getDataRow().getCell(colNum);
-		LocalDateTime value = getCellLocalDateTimeUtc(cell, "created date");
+		LocalDateTime value = getCellLocalDateTimeUtc(cell, fieldName);
 		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
 	}
 
