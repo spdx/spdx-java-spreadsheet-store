@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -18,9 +19,10 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +43,6 @@ import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.Checksum;
 import org.spdx.library.model.v2.ExternalDocumentRef;
-import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxCreatorInformation;
 import org.spdx.library.model.v2.SpdxDocument;
 import org.spdx.library.model.v2.SpdxElement;
@@ -89,7 +90,9 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		true, false, false, false, false, false, false, true, false, false};
 	
 	private static Pattern EXTERNAL_DOC_REF_PATTERN = getExternalDocPattern();
-	
+
+	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
+
 	public DocumentInfoSheetV2d0(Workbook workbook, String sheetName, String version, IModelStore modelStore, ModelCopyManager copyManager) throws SpreadsheetException {
 		super(workbook, sheetName, version, modelStore, copyManager);
 	}
@@ -382,10 +385,9 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		if (created == null) {
 			throw(new SpreadsheetException("Missing created date"));
 		}
-		DateFormat dateFormat = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);	
 		try {
-			setCreated(dateFormat.parse(created));
-		} catch (ParseException e) {
+			setCreated(Date.from(DATE_FORMAT.parse(created, Instant::from)));
+		} catch (DateTimeParseException e) {
 			throw(new SpreadsheetException("Invalid created date - unable to parse"));
 		}
 		// Document comments

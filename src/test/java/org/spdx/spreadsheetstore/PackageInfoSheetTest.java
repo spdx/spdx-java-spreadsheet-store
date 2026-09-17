@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -25,9 +26,13 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.ModelRegistry;
@@ -46,6 +51,7 @@ import org.spdx.library.model.v2.license.DisjunctiveLicenseSet;
 import org.spdx.library.model.v2.license.ExtractedLicenseInfo;
 import org.spdx.library.model.v2.license.SpdxNoneLicense;
 import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
+import org.spdx.spreadsheetstore.ods.OdsWorkbook;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -188,6 +194,57 @@ public class PackageInfoSheetTest extends TestCase {
 		assertTrue(pkgInfo2.equivalent(tstPkgInfo2));
 		assertEquals(pkgInfo2.getId(), tstPkgInfo2.getId());
 		assertEquals(2, pkgInfoSheet.getPackages().size());
+	}
+
+	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	// UTC instants on a US Eastern DST transition boundary. A conversion that goes through
+	// the JVM default-zone local wall clock (instead of UTC throughout) resolves a
+	// nonexistent or ambiguous local time inconsistently.
+	public void testReleaseBuiltValidUntilDatesAtDstTransitions() throws InvalidSPDXAnalysisException, SpreadsheetException {
+		String[] dstTransitionDates = new String[] {
+				"2013-03-10T07:30:00Z", // spring-forward gap: local 02:30 EST never occurs
+				"2013-11-03T05:30:00Z", // fall-back overlap, 1st pass: local 01:30 EDT
+				"2013-11-03T06:30:00Z" // fall-back overlap, 2nd pass: local 01:30 EST - same wall clock, different instant
+		};
+		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
+				HSSFWorkbook::new, // .xls
+				XSSFWorkbook::new, // .xlsx
+				OdsWorkbook::new // .ods
+		);
+		TimeZone originalDefault = TimeZone.getDefault();
+		try {
+			TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+			for (String testDate : dstTransitionDates) {
+				for (Supplier<Workbook> workbookFactory : workbookFactories) {
+					AnyLicenseInfo license = new SpdxNoneLicense();
+					SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
+							modelStore.getNextId(IdType.Anonymous), copyManager, true);
+					verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
+					SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-" + testDate.hashCode(),
+							copyManager, "decname", license, "dec-copyright", license)
+							.setDownloadLocation("NOASSERTION")
+							.setPackageVerificationCode(verificationCode)
+							.setReleaseDate(testDate)
+							.setBuiltDate(testDate)
+							.setValidUntilDate(testDate)
+							.build();
+
+					Workbook wb = workbookFactory.get();
+					PackageInfoSheet.create(wb, "Package Info");
+					PackageInfoSheet pkgInfoSheet = PackageInfoSheet.openVersion(wb, "Package Info",
+							SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+					pkgInfoSheet.add(pkgInfo);
+					SpdxPackage result = pkgInfoSheet.getPackages().get(0);
+
+					String context = "[format=" + wb.getClass().getSimpleName() + "] " + testDate;
+					assertEquals("releaseDate for " + context, testDate, result.getReleaseDate().get());
+					assertEquals("builtDate for " + context, testDate, result.getBuiltDate().get());
+					assertEquals("validUntilDate for " + context, testDate, result.getValidUntilDate().get());
+				}
+			}
+		} finally {
+			TimeZone.setDefault(originalDefault);
+		}
 	}
 
 	private DisjunctiveLicenseSet createDisjunctiveLicenseSet(Collection<AnyLicenseInfo> disjunctiveLicenses) throws InvalidSPDXAnalysisException {

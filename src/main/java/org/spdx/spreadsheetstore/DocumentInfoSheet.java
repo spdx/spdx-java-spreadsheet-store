@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -18,6 +19,8 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -126,9 +129,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	 */
 	protected void setDataCellDateValue(int colNum, Date value) {
 		Cell cell = getOrCreateDataCell(colNum);
-		cell.setCellValue(value);
+		cell.setCellValue(LocalDateTime.ofInstant(value.toInstant(), ZoneOffset.UTC));
 		cell.setCellStyle(dateStyle);
-		
+
 	}
 
 	/**
@@ -141,9 +144,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 		Cell cell = getDataRow().getCell(colNum);
 		if (cell == null) {
 			return null;
-		} else {
-			return cell.getDateCellValue();
 		}
+		LocalDateTime value = cell.getLocalDateTimeCellValue();
+		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
 	}
 
 	/**

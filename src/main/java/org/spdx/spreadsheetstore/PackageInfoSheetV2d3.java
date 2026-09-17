@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -19,12 +20,12 @@
 package org.spdx.spreadsheetstore;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,7 +42,6 @@ import org.spdx.library.LicenseInfoFactory;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.SpdxVerificationHelper;
 import org.spdx.library.model.v2.Checksum;
-import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.SpdxPackage;
 import org.spdx.library.model.v2.SpdxPackage.SpdxPackageBuilder;
 import org.spdx.library.model.v2.SpdxPackageVerificationCode;
@@ -103,8 +103,24 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	static final int[] COLUMN_WIDTHS = new int[] {30, 17, 17, 30, 30, 30, 50, 50, 75, 60, 40, 30,
 		40, 40, 90, 50, 50, 50, 80, 80, 10, 50, 12, 20, 20, 20, 50};
 	
-	private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).withZone(ZoneOffset.UTC);
-	
+	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
+
+	private static LocalDateTime toUtcLocalDateTime(Instant instant) {
+		return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+	}
+
+	private static String readUtcDateCell(Cell cell, String fieldName) throws SpreadsheetException {
+		if (cell == null || cell.getCellType() == CellType.BLANK) {
+			return null;
+		}
+		try {
+			LocalDateTime value = cell.getLocalDateTimeCellValue();
+			return value == null ? null : DATE_FORMAT.format(value.toInstant(ZoneOffset.UTC));
+		} catch (IllegalStateException e) {
+			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
+		}
+	}
+
 	/**
 	 * @param workbook
 	 * @param sheetName
@@ -384,7 +400,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		if (builtDate.isPresent()) {
 			Cell cell = row.createCell(BUILT_DATE_COL);
 			try {
-				cell.setCellValue(Date.from(DATE_FORMAT.parse(builtDate.get(), Instant::from)));
+				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(builtDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
 				throw(new SpreadsheetException("Invalid created date - unable to parse"));
 			}
@@ -394,7 +410,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		if (releaseDate.isPresent()) {
 			Cell cell = row.createCell(RELEASE_DATE_COL);
 			try {
-				cell.setCellValue(Date.from(DATE_FORMAT.parse(releaseDate.get(), Instant::from)));
+				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(releaseDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
 				throw(new SpreadsheetException("Invalid created date - unable to parse"));
 			}
@@ -404,7 +420,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 		if (validUntilDate.isPresent()) {
 			Cell cell = row.createCell(VALID_UNTIL_COL);
 			try {
-				cell.setCellValue(Date.from(DATE_FORMAT.parse(validUntilDate.get(), Instant::from)));
+				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(validUntilDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
 				throw(new SpreadsheetException("Invalid created date - unable to parse"));
 			}
@@ -618,17 +634,17 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 				throw new SpreadsheetException("Invalid purpose: "+primaryPurposeCell.getStringCellValue());
 			}
 		}
-		Cell releaseDateCell = row.getCell(RELEASE_DATE_COL);
-		if (Objects.nonNull(releaseDateCell) && Objects.nonNull(releaseDateCell.getDateCellValue())) {
-			retval.setReleaseDate(DATE_FORMAT.format(releaseDateCell.getDateCellValue().toInstant()));
+		String releaseDateValue = readUtcDateCell(row.getCell(RELEASE_DATE_COL), "release date");
+		if (Objects.nonNull(releaseDateValue)) {
+			retval.setReleaseDate(releaseDateValue);
 		}
-		Cell builtDateCell = row.getCell(BUILT_DATE_COL);
-		if (Objects.nonNull(builtDateCell) && Objects.nonNull(builtDateCell.getDateCellValue())) {
-			retval.setBuiltDate(DATE_FORMAT.format(builtDateCell.getDateCellValue().toInstant()));
+		String builtDateValue = readUtcDateCell(row.getCell(BUILT_DATE_COL), "built date");
+		if (Objects.nonNull(builtDateValue)) {
+			retval.setBuiltDate(builtDateValue);
 		}
-		Cell validUntilDateCell = row.getCell(VALID_UNTIL_COL);
-		if (Objects.nonNull(validUntilDateCell) && Objects.nonNull(validUntilDateCell.getDateCellValue())) {
-			retval.setValidUntilDate(DATE_FORMAT.format(validUntilDateCell.getDateCellValue().toInstant()));
+		String validUntilDateValue = readUtcDateCell(row.getCell(VALID_UNTIL_COL), "valid until date");
+		if (Objects.nonNull(validUntilDateValue)) {
+			retval.setValidUntilDate(validUntilDateValue);
 		}
 		try {
 			return retval.build();

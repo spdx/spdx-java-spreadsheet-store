@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Arthit Suriyawongkul
  * SPDX-FileCopyrightText: Copyright (c) 2026 Source Auditor Inc.
+ * SPDX-FileCopyrightText: 2026 SPDX Contributors
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  */

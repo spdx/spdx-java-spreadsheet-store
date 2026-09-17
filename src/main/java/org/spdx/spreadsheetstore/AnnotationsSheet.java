@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -18,7 +19,8 @@
  */
 package org.spdx.spreadsheetstore;
 
-import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -29,7 +31,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.Annotation;
-import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.enumerations.AnnotationType;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
@@ -58,7 +59,7 @@ public class AnnotationsSheet extends AbstractSheet {
 
 	static final boolean[] REQUIRED = new boolean[] {true, true, true, true, true, false};
 	
-	final SimpleDateFormat dateFormat = new SimpleDateFormat(SpdxConstantsCompatV2.SPDX_DATE_FORMAT);
+	private static final DateTimeFormatter DATE_FORMAT = SPDX_UTC_DATE_FORMAT;
 
 
 	/**
@@ -133,6 +134,13 @@ public class AnnotationsSheet extends AbstractSheet {
 		return null;
 	}
 
+	/**
+	 * Create and initializes an annotations sheet with headers and formatting.
+	 * Replace any existing sheet with the same name.
+	 *
+	 * @param wb the workbook to add the sheet to
+	 * @param sheetName the name of the sheet to create
+	 */
 	public static void create(Workbook wb, String sheetName) {
 		int sheetNum = wb.getSheetIndex(sheetName);
 		if (sheetNum >= 0) {
@@ -157,8 +165,11 @@ public class AnnotationsSheet extends AbstractSheet {
 	}
 
 	/**
-	 * @param annotation
-	 * @throws SpreadsheetException 
+	 * Add an annotation and its element ID to a new row in the sheet.
+	 *
+	 * @param annotation the annotation to add
+	 * @param elementId the ID of the annotated element
+	 * @throws SpreadsheetException if annotation data cannot be extracted
 	 */
 	public void add(Annotation annotation, String elementId) throws SpreadsheetException {
 		Row row = addRow();		
@@ -226,7 +237,7 @@ public class AnnotationsSheet extends AbstractSheet {
 		if (dateCell.getCellType() == CellType.STRING) {
 			date = dateCell.getStringCellValue();
 		} else if (dateCell.getCellType() == CellType.NUMERIC) {
-		    date = dateFormat.format(dateCell.getDateCellValue());
+		    date = DATE_FORMAT.format(dateCell.getLocalDateTimeCellValue().toInstant(ZoneOffset.UTC));
 		}
 		String annotator = null;
 		Cell annotatorCell = row.getCell(ANNOTATOR_COL);

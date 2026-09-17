@@ -1,6 +1,7 @@
 /*
  * SPDX-FileContributor: Gary O'Neall
- * SPDX-FileCopyrightText: Copyright (c) 2020 Source Auditor Inc.
+ * SPDX-FileContributor: Arthit Suriyawongkul
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2026 Source Auditor Inc.
  * SPDX-FileType: SOURCE
  * SPDX-License-Identifier: Apache-2.0
  * <p>
@@ -24,6 +25,8 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.AttributedString;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,6 +53,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.library.ModelCopyManager;
 import org.spdx.library.model.v2.Checksum;
+import org.spdx.library.model.v2.SpdxConstantsCompatV2;
 import org.spdx.library.model.v2.enumerations.ChecksumAlgorithm;
 import org.spdx.library.model.v2.license.AnyLicenseInfo;
 import org.spdx.storage.IModelStore;
@@ -84,6 +88,9 @@ public abstract class AbstractSheet {
 	 */
 	public static Pattern CHECKSUM_PATTERN = Pattern.compile("(\\S+):\\s+(\\S+)");
 	
+	protected static final DateTimeFormatter SPDX_UTC_DATE_FORMAT =
+			DateTimeFormatter.ofPattern(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).withZone(ZoneOffset.UTC);
+
 	// Default style for cells
 	static final String FONT_NAME = "Arial";
 	protected static final short FONT_SIZE = (short)10*20;

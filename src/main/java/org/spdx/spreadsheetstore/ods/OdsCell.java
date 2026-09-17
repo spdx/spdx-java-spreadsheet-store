@@ -335,6 +335,10 @@ public class OdsCell implements Cell {
 			Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
 			return java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
 		}
+		if (value instanceof String) {
+			Date date = getDateCellValue();
+			return date == null ? null : java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
+		}
 		return null;
 	}
 
