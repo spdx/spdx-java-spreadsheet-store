@@ -142,7 +142,7 @@ public class OdsCell implements Cell {
 			return (Date) value;
 		}
 		if (value instanceof Number) {
-			return org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
+			return Date.from(DateUtil.getLocalDateTime(((Number) value).doubleValue()).atZone(java.time.ZoneOffset.UTC).toInstant());
 		}
 		if (value instanceof String) {
 			String s = ((String) value).trim();
@@ -158,8 +158,8 @@ public class OdsCell implements Cell {
 					LocalDate ld = LocalDate.parse(s, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE);
 					return Date.from(ld.atStartOfDay(java.time.ZoneOffset.UTC).toInstant());
 				}
-			} catch (Exception e) {
-				// Not an ISO date string
+			} catch (java.time.format.DateTimeParseException e) {
+				throw new IllegalStateException("Cannot get a date value from a non-date STRING cell");
 			}
 		}
 		return null;
@@ -332,8 +332,7 @@ public class OdsCell implements Cell {
 			return java.time.LocalDateTime.ofInstant(((Date) value).toInstant(), java.time.ZoneOffset.UTC);
 		}
 		if (value instanceof Number) {
-			Date date = org.apache.poi.ss.usermodel.DateUtil.getJavaDate(((Number) value).doubleValue());
-			return java.time.LocalDateTime.ofInstant(date.toInstant(), java.time.ZoneOffset.UTC);
+			return DateUtil.getLocalDateTime(((Number) value).doubleValue());
 		}
 		if (value instanceof String) {
 			Date date = getDateCellValue();

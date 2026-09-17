@@ -140,12 +140,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	 * @param colNum Cell column number.
 	 * @return Date value of the cell, or null if the cell is empty.
 	 */
-	protected Date getDataCellDateValue(int colNum) {
+	protected Date getDataCellDateValue(int colNum) throws SpreadsheetException {
 		Cell cell = getDataRow().getCell(colNum);
-		if (cell == null) {
-			return null;
-		}
-		LocalDateTime value = cell.getLocalDateTimeCellValue();
+		LocalDateTime value = getCellLocalDateTimeUtc(cell, "created date");
 		return value == null ? null : Date.from(value.toInstant(ZoneOffset.UTC));
 	}
 
@@ -207,8 +204,9 @@ public abstract class DocumentInfoSheet extends AbstractSheet {
 	 * Retrieve the creation date of the SPDX document
 	 *
 	 * @return Date the SPDX document was created
+	 * @throws SpreadsheetException If the created date cell does not hold a valid date
 	 */
-	public abstract Date getCreated();
+	public abstract Date getCreated() throws SpreadsheetException;
 
 	/**
 	 * Retrieve the list of creators of the SPDX document

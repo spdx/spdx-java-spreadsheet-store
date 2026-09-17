@@ -514,6 +514,9 @@ public class SpreadsheetStore extends ExtendedSpdxStore implements ISerializable
 	private void copyDocumentInfoFromSS(DocumentInfoSheet documentInfoSheet, SpdxDocument document,
 			String documentUri, ModelCopyManager copyManager) throws InvalidSPDXAnalysisException {
 		Date createdDate = documentInfoSheet.getCreated();
+		if (createdDate == null) {
+			throw new SpreadsheetException("Missing created date");
+		}
 		String created  = FORMAT.format(createdDate.toInstant());
 		List<String> createdBys = documentInfoSheet.getCreatedBy();
 		SpdxCreatorInformation creationInfo = document.createCreationInfo(createdBys, created); 

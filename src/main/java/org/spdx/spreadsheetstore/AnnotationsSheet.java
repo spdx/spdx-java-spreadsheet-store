@@ -19,6 +19,7 @@
  */
 package org.spdx.spreadsheetstore;
 
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
@@ -237,7 +238,11 @@ public class AnnotationsSheet extends AbstractSheet {
 		if (dateCell.getCellType() == CellType.STRING) {
 			date = dateCell.getStringCellValue();
 		} else if (dateCell.getCellType() == CellType.NUMERIC) {
-		    date = DATE_FORMAT.format(dateCell.getLocalDateTimeCellValue().toInstant(ZoneOffset.UTC));
+			LocalDateTime dateValue = getCellLocalDateTimeUtc(dateCell, "annotation date");
+			if (dateValue == null) {
+				throw new SpreadsheetException("Invalid annotation date - unable to parse as a date");
+			}
+			date = DATE_FORMAT.format(dateValue.toInstant(ZoneOffset.UTC));
 		}
 		String annotator = null;
 		Cell annotatorCell = row.getCell(ANNOTATOR_COL);

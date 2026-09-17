@@ -20,12 +20,16 @@
 package org.spdx.spreadsheetstore;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.TimeZone;
+import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.spdx.core.DefaultModelStore;
 import org.spdx.core.InvalidSPDXAnalysisException;
 import org.spdx.core.ModelRegistry;
@@ -34,6 +38,7 @@ import org.spdx.library.model.v2.Annotation;
 import org.spdx.library.model.v2.SpdxModelInfoV2_X;
 import org.spdx.library.model.v2.enumerations.AnnotationType;
 import org.spdx.library.model.v3_0_1.SpdxModelInfoV3_0;
+import org.spdx.spreadsheetstore.ods.OdsWorkbook;
 import org.spdx.storage.IModelStore;
 import org.spdx.storage.IModelStore.IdType;
 import org.spdx.storage.simple.InMemSpdxStore;
@@ -122,28 +127,36 @@ public class AnnotationsSheetTest extends TestCase {
 	 * (foreign-file, date-typed) cell is otherwise never exercised by any test.
 	 */
 	public void testGetAnnotationFromNumericDateCell() throws InvalidSPDXAnalysisException {
+		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
+				HSSFWorkbook::new, // .xls
+				XSSFWorkbook::new, // .xlsx
+				OdsWorkbook::new // .ods
+		);
 		TimeZone originalDefault = TimeZone.getDefault();
 		try {
 			TimeZone.setDefault(TimeZone.getTimeZone("Pacific/Kiritimati"));
-			Workbook wb = new HSSFWorkbook();
-			AnnotationsSheet.create(wb, "Annotations");
-			AnnotationsSheet sheet = new AnnotationsSheet(wb, "Annotations",
-					modelStore, DOCUMENT_URI, copyManager);
+			for (Supplier<Workbook> workbookFactory : workbookFactories) {
+				Workbook wb = workbookFactory.get();
+				AnnotationsSheet.create(wb, "Annotations");
+				AnnotationsSheet sheet = new AnnotationsSheet(wb, "Annotations",
+						modelStore, DOCUMENT_URI, copyManager);
 
-			Annotation annotation = new Annotation(modelStore, DOCUMENT_URI,
-					modelStore.getNextId(IdType.Anonymous), copyManager, true);
-			annotation.setAnnotator("Person: Annotator1");
-			annotation.setAnnotationDate("2010-01-29T18:30:22Z");
-			annotation.setAnnotationType(AnnotationType.OTHER);
-			annotation.setComment("Comment1");
-			sheet.add(annotation, "SPDXRef-1");
+				Annotation annotation = new Annotation(modelStore, DOCUMENT_URI,
+						modelStore.getNextId(IdType.Anonymous), copyManager, true);
+				annotation.setAnnotator("Person: Annotator1");
+				annotation.setAnnotationDate("2010-01-29T18:30:22Z");
+				annotation.setAnnotationType(AnnotationType.OTHER);
+				annotation.setComment("Comment1");
+				sheet.add(annotation, "SPDXRef-1");
 
-			Row row = sheet.sheet.getRow(1);
-			Cell dateCell = row.getCell(AnnotationsSheet.DATE_COL);
-			dateCell.setCellValue(LocalDateTime.of(2010, 1, 29, 18, 30, 22));
+				Row row = sheet.sheet.getRow(1);
+				Cell dateCell = row.getCell(AnnotationsSheet.DATE_COL);
+				dateCell.setCellValue(LocalDateTime.of(2010, 1, 29, 18, 30, 22));
 
-			Annotation result = sheet.getAnnotation(1);
-			assertEquals("2010-01-29T18:30:22Z", result.getAnnotationDate());
+				Annotation result = sheet.getAnnotation(1);
+				assertEquals("[format=" + wb.getClass().getSimpleName() + "]",
+						"2010-01-29T18:30:22Z", result.getAnnotationDate());
+			}
 		} finally {
 			TimeZone.setDefault(originalDefault);
 		}

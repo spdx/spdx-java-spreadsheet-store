@@ -223,7 +223,7 @@ public class DocumentInfoSheetV2d0 extends DocumentInfoSheet {
 		return getDataCellStringValue(AUTHOR_COMMENTS_COL);
 	}
 	
-	public Date getCreated() {
+	public Date getCreated() throws SpreadsheetException {
 		return getDataCellDateValue(CREATED_COL);
 	}
 	

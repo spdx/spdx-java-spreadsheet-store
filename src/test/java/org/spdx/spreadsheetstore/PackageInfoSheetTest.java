@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import java.util.function.Supplier;
 
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.spdx.core.DefaultModelStore;
@@ -244,6 +245,45 @@ public class PackageInfoSheetTest extends TestCase {
 			}
 		} finally {
 			TimeZone.setDefault(originalDefault);
+		}
+	}
+
+	// Regression test for https://github.com/spdx/spdx-java-spreadsheet-store/issues/106.
+	// A malformed date cell must raise SpreadsheetException consistently across formats,
+	// not be silently dropped in some formats and rejected in others.
+	public void testInvalidReleaseDateThrowsSpreadsheetExceptionAcrossFormats() throws InvalidSPDXAnalysisException {
+		List<Supplier<Workbook>> workbookFactories = Arrays.asList(
+				HSSFWorkbook::new, // .xls
+				XSSFWorkbook::new, // .xlsx
+				OdsWorkbook::new // .ods
+		);
+		for (Supplier<Workbook> workbookFactory : workbookFactories) {
+			Workbook wb = workbookFactory.get();
+			PackageInfoSheet.create(wb, "Package Info");
+			PackageInfoSheetV2d3 pkgInfoSheet = (PackageInfoSheetV2d3) PackageInfoSheet.openVersion(wb, "Package Info",
+					SpdxSpreadsheet.CURRENT_VERSION, modelStore, DOCUMENT_URI, copyManager);
+
+			AnyLicenseInfo license = new SpdxNoneLicense();
+			SpdxPackageVerificationCode verificationCode = new SpdxPackageVerificationCode(modelStore, DOCUMENT_URI,
+					modelStore.getNextId(IdType.Anonymous), copyManager, true);
+			verificationCode.setValue("0123456789abcdef0123456789abcdef01234567");
+			SpdxPackage pkgInfo = new SpdxPackageBuilder(modelStore, DOCUMENT_URI, "SPDXRef-Package-Invalid",
+					copyManager, "decname", license, "dec-copyright", license)
+					.setDownloadLocation("NOASSERTION")
+					.setPackageVerificationCode(verificationCode)
+					.build();
+			pkgInfoSheet.add(pkgInfo);
+
+			Row row = pkgInfoSheet.sheet.getRow(1);
+			row.createCell(pkgInfoSheet.RELEASE_DATE_COL).setCellValue("not-a-date");
+
+			String context = "[format=" + wb.getClass().getSimpleName() + "]";
+			try {
+				pkgInfoSheet.getPackages();
+				fail("Expected SpreadsheetException " + context);
+			} catch (SpreadsheetException e) {
+				assertTrue(context + " message: " + e.getMessage(), e.getMessage().contains("Invalid release date"));
+			}
 		}
 	}
 

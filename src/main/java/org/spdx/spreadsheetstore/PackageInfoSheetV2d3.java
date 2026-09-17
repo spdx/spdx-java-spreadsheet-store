@@ -110,15 +110,8 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 	}
 
 	private static String readUtcDateCell(Cell cell, String fieldName) throws SpreadsheetException {
-		if (cell == null || cell.getCellType() == CellType.BLANK) {
-			return null;
-		}
-		try {
-			LocalDateTime value = cell.getLocalDateTimeCellValue();
-			return value == null ? null : DATE_FORMAT.format(value.toInstant(ZoneOffset.UTC));
-		} catch (IllegalStateException e) {
-			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
-		}
+		LocalDateTime value = getCellLocalDateTimeUtc(cell, fieldName);
+		return value == null ? null : DATE_FORMAT.format(value.toInstant(ZoneOffset.UTC));
 	}
 
 	/**
@@ -402,7 +395,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			try {
 				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(builtDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid created date - unable to parse"));
+				throw(new SpreadsheetException("Invalid built date - unable to parse"));
 			}
 			cell.setCellStyle(dateStyle);
 		}
@@ -412,7 +405,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			try {
 				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(releaseDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid created date - unable to parse"));
+				throw(new SpreadsheetException("Invalid release date - unable to parse"));
 			}
 			cell.setCellStyle(dateStyle);
 		}
@@ -422,7 +415,7 @@ public class PackageInfoSheetV2d3 extends PackageInfoSheet {
 			try {
 				cell.setCellValue(toUtcLocalDateTime(DATE_FORMAT.parse(validUntilDate.get(), Instant::from)));
 			} catch (DateTimeParseException e) {
-				throw(new SpreadsheetException("Invalid created date - unable to parse"));
+				throw(new SpreadsheetException("Invalid valid until date - unable to parse"));
 			}
 			cell.setCellStyle(dateStyle);
 		}

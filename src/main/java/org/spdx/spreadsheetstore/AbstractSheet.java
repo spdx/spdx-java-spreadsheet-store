@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.AttributedString;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -90,6 +91,26 @@ public abstract class AbstractSheet {
 	
 	protected static final DateTimeFormatter SPDX_UTC_DATE_FORMAT =
 			DateTimeFormatter.ofPattern(SpdxConstantsCompatV2.SPDX_DATE_FORMAT).withZone(ZoneOffset.UTC);
+
+	/**
+	 * Read a date cell as a zone-less LocalDateTime, guarding against a cell whose type doesn't
+	 * hold a date (throws SpreadsheetException instead of letting IllegalStateException escape).
+	 *
+	 * @param cell Cell to read, may be null
+	 * @param fieldName Field name used in the exception message
+	 * @return LocalDateTime value, or null if the cell is missing/blank/unparseable
+	 * @throws SpreadsheetException If the cell type does not hold a date value
+	 */
+	protected static LocalDateTime getCellLocalDateTimeUtc(Cell cell, String fieldName) throws SpreadsheetException {
+		if (cell == null || cell.getCellType() == CellType.BLANK) {
+			return null;
+		}
+		try {
+			return cell.getLocalDateTimeCellValue();
+		} catch (IllegalStateException e) {
+			throw new SpreadsheetException("Invalid " + fieldName + " - unable to parse as a date");
+		}
+	}
 
 	// Default style for cells
 	static final String FONT_NAME = "Arial";
