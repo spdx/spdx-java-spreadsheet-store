@@ -109,16 +109,12 @@ public class OdsSheet implements Sheet {
 	}
 
 	@Override
-	public synchronized void removeRow(Row row) {
+	public void removeRow(Row row) {
 		if (row instanceof OdsRow) {
 			int rowNum = row.getRowNum();
 			OdsRow odsRow = (OdsRow) row;
 			odsRow.clear();
 			rows.remove(rowNum);
-			// Narrow the cached range so getRow returns null for the removed edge row.
-			if (contentScanned) {
-				scanContentRows();
-			}
 		}
 	}
 

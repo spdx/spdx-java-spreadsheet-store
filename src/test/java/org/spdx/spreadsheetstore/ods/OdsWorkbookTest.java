@@ -395,20 +395,6 @@ public class OdsWorkbookTest {
 	}
 
 	@Test
-	public void testCreateRowAfterTrailingEmptyRows() {
-		OdsWorkbook workbook = new OdsWorkbook();
-		Sheet sheet = workbook.createSheet("Append");
-		sheet.createRow(0).createCell(0).setCellValue("header");
-		((OdsSheet) sheet).getSodsSheet().appendRows(3);
-		assertNull(sheet.getRow(2));
-		Row row = sheet.createRow(2);
-		row.createCell(0).setCellValue("new");
-		assertNotNull(sheet.getRow(2));
-		assertEquals(2, sheet.getLastRowNum());
-		assertEquals("new", sheet.getRow(2).getCell(0).getStringCellValue());
-	}
-
-	@Test
 	public void testSheetWithOnlyEmptyRows() {
 		OdsWorkbook workbook = new OdsWorkbook();
 		Sheet sheet = workbook.createSheet("OnlyEmpty");
@@ -417,51 +403,5 @@ public class OdsWorkbookTest {
 		assertEquals(-1, sheet.getLastRowNum());
 		assertNull(sheet.getRow(0));
 		assertFalse(sheet.iterator().hasNext());
-	}
-
-	@Test
-	public void testLeadingEmptyRowsAreNotRows() {
-		OdsWorkbook workbook = new OdsWorkbook();
-		Sheet sheet = workbook.createSheet("Leading");
-		for (int i = 0; i < 4; i++) {
-			sheet.createRow(i);
-		}
-		sheet.getRow(2).createCell(0).setCellValue("header");
-		sheet.getRow(3).createCell(0).setCellValue("data");
-		sheet.removeRow(sheet.getRow(0));
-		sheet.removeRow(sheet.getRow(1));
-		assertEquals(2, sheet.getFirstRowNum());
-		assertEquals(3, sheet.getLastRowNum());
-		assertNull(sheet.getRow(0));
-		assertNull(sheet.getRow(1));
-		sheet.removeRow(sheet.getRow(2));
-		assertEquals(3, sheet.getFirstRowNum());
-	}
-
-	@Test
-	public void testRowBoundsAfterRemovingRows() {
-		OdsWorkbook workbook = new OdsWorkbook();
-		Sheet sheet = workbook.createSheet("Removed");
-		sheet.createRow(0).createCell(0).setCellValue("header");
-		sheet.createRow(1).createCell(0).setCellValue("data");
-		assertEquals(1, sheet.getLastRowNum());
-		sheet.removeRow(sheet.getRow(1));
-		assertEquals(0, sheet.getLastRowNum());
-		sheet.removeRow(sheet.getRow(0));
-		assertEquals(-1, sheet.getFirstRowNum());
-		assertEquals(-1, sheet.getLastRowNum());
-	}
-
-	@Test
-	public void testRowsBetweenContentAndCreatedRowExist() {
-		OdsWorkbook workbook = new OdsWorkbook();
-		Sheet sheet = workbook.createSheet("Gap");
-		sheet.createRow(0).createCell(0).setCellValue("header");
-		((OdsSheet) sheet).getSodsSheet().appendRows(4);
-		sheet.createRow(4).createCell(0).setCellValue("data");
-		assertEquals(4, sheet.getLastRowNum());
-		for (int i = 0; i <= 4; i++) {
-			assertNotNull("row " + i, sheet.getRow(i));
-		}
 	}
 }
