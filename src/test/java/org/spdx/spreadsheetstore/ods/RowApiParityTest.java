@@ -93,7 +93,7 @@ public class RowApiParityTest {
 
 	private static void content(Sheet sheet, int row, int col) {
 		Row r = sheet.getRow(row) != null ? sheet.getRow(row) : sheet.createRow(row);
-		r.createCell(col).setCellValue(row + ":" + col); // unique: SODS aliases cells of identical rows on load
+		r.createCell(col).setCellValue(row + ":" + col); // Distinct values: SODS stores identical trailing rows as one repeated row, and writing to the last one changes all of them
 	}
 
 	@Test
