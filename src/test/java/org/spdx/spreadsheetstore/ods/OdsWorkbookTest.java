@@ -472,6 +472,9 @@ public class OdsWorkbookTest {
 		for (int i = 0; i <= 4; i++) {
 			assertNotNull("row " + i, sheet.getRow(i));
 		}
+		for (int i = 1; i <= 3; i++) {
+			assertNull("row " + i, sheet.getRow(i).getCell(0));
+		}
 	}
 
 	/** A removed row between data rows is still returned; it has default height and is visible. */
