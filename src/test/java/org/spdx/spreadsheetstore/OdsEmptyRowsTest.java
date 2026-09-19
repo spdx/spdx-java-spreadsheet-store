@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * ODS files from LibreOffice end every sheet with empty rows.
  * Those rows must be ignored: content matches the XLSX example.
- * Fixtures: <code>TestFiles/ods</code>, from <code>TestFiles/generate_ods_fixtures.py</code>.
+ * Fixtures: <code>TestFiles/ods</code>.
  */
 public class OdsEmptyRowsTest {
 

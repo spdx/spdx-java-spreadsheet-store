@@ -372,15 +372,15 @@ public class OdsWorkbookTest {
 		OdsWorkbook workbook = new OdsWorkbook();
 		Sheet sheet = workbook.createSheet("Styled");
 		sheet.createRow(0).createCell(0).setCellValue("header");
-		Row styled = sheet.createRow(1);
-		Cell blank = styled.createCell(0);
-		blank.setCellStyle(workbook.createCellStyle());
-		blank.setBlank();
-		((OdsSheet) sheet).getSodsSheet().appendRows(2);
-		// created row exists; untouched rows after it do not
-		assertNotNull(sheet.getRow(1));
+		com.github.miachm.sods.Sheet sodsSheet = ((OdsSheet) sheet).getSodsSheet();
+		sodsSheet.appendRows(2);
+		com.github.miachm.sods.Style bold = new com.github.miachm.sods.Style();
+		bold.setBold(true);
+		sodsSheet.getRange(1, 0, 2, 1).setStyle(bold); // styled blank cells after the data
+		assertTrue(sodsSheet.getRange(2, 0).getStyle().isBold());
+		assertEquals(0, sheet.getLastRowNum());
+		assertNull(sheet.getRow(1));
 		assertNull(sheet.getRow(2));
-		assertNull(sheet.getRow(3));
 	}
 
 	@Test
@@ -388,10 +388,15 @@ public class OdsWorkbookTest {
 		OdsWorkbook workbook = new OdsWorkbook();
 		Sheet sheet = workbook.createSheet("Interior");
 		sheet.createRow(0).createCell(0).setCellValue("first");
+		// Row 3 inside the appended block: SODS writes to the last row of a trailing block hit the whole block
+		((OdsSheet) sheet).getSodsSheet().appendRows(4);
 		sheet.createRow(3).createCell(0).setCellValue("last");
 		assertEquals(3, sheet.getLastRowNum());
-		assertNotNull(sheet.getRow(1));
-		assertNotNull(sheet.getRow(2));
+		for (int i = 1; i <= 2; i++) {
+			assertNotNull("row " + i, sheet.getRow(i));
+			assertNull("row " + i, sheet.getRow(i).getCell(0));
+		}
+		assertNull(sheet.getRow(4));
 	}
 
 	@Test
