@@ -83,10 +83,12 @@ public class OdsSheet implements Sheet {
 			throw new IllegalArgumentException("Row number must be >= 0");
 		}
 		int currentRows = sodsSheet.getMaxRows();
+		OdsRow row = new OdsRow(this, rownum);
 		if (rownum >= currentRows) {
 			sodsSheet.appendRows(rownum - currentRows + 1);
+		} else {
+			resetRow(row); // replaces the existing row, as in POI
 		}
-		OdsRow row = new OdsRow(this, rownum);
 		rows.put(rownum, row);
 		return row;
 	}
@@ -109,12 +111,25 @@ public class OdsSheet implements Sheet {
 	}
 
 	@Override
-	public void removeRow(Row row) {
+	public synchronized void removeRow(Row row) {
 		if (row instanceof OdsRow) {
 			int rowNum = row.getRowNum();
-			OdsRow odsRow = (OdsRow) row;
-			odsRow.clear();
+			resetRow((OdsRow) row);
 			rows.remove(rowNum);
+			// Narrow the cached range so getRow returns null for the removed edge row.
+			if (contentScanned) {
+				scanContentRows();
+			}
+		}
+	}
+
+	/** Leaves the row as POI has it after the row is dropped: no cells, default height, visible. */
+	private void resetRow(OdsRow row) {
+		row.clear();
+		int rowNum = row.getRowNum();
+		if (rowNum < sodsSheet.getMaxRows()) {
+			sodsSheet.setRowHeight(rowNum, null);
+			sodsSheet.showRow(rowNum);
 		}
 	}
 

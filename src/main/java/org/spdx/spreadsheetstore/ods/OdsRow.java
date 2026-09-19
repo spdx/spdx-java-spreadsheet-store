@@ -37,11 +37,12 @@ public class OdsRow implements Row {
 	}
 
 	/**
-	 * Clears all cells in this row, setting their SODS range values to null.
+	 * Clears value, formula, annotation and style of every cell in this row.
 	 */
-	public void clear() {
-		for (OdsCell cell : cells.values()) {
-			cell.getSodsRange().setValue(null);
+	public synchronized void clear() {
+		com.github.miachm.sods.Sheet sodsSheet = sheet.getSodsSheet();
+		if (rowNum < sodsSheet.getMaxRows() && sodsSheet.getMaxColumns() > 0) {
+			sodsSheet.getRange(rowNum, 0, 1, sodsSheet.getMaxColumns()).clear();
 		}
 		cells.clear();
 	}
@@ -209,10 +210,10 @@ public class OdsRow implements Row {
 		return cellIterator();
 	}
 	@Override
-	public void removeCell(Cell cell) {
+	public synchronized void removeCell(Cell cell) {
 		if (cell instanceof OdsCell) {
 			int col = cell.getColumnIndex();
-			((OdsCell) cell).getSodsRange().setValue(null);
+			((OdsCell) cell).getSodsRange().clear();
 			cells.remove(col);
 		}
 	}

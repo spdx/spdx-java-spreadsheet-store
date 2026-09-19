@@ -7,6 +7,10 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -408,5 +412,84 @@ public class OdsWorkbookTest {
 		assertEquals(-1, sheet.getLastRowNum());
 		assertNull(sheet.getRow(0));
 		assertFalse(sheet.iterator().hasNext());
+	}
+
+	@Test
+	public void testCreateRowAfterTrailingEmptyRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Append");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		((OdsSheet) sheet).getSodsSheet().appendRows(3);
+		assertNull(sheet.getRow(2));
+		Row row = sheet.createRow(2);
+		row.createCell(0).setCellValue("new");
+		assertNotNull(sheet.getRow(2));
+		assertEquals(2, sheet.getLastRowNum());
+		assertEquals("new", sheet.getRow(2).getCell(0).getStringCellValue());
+	}
+
+	@Test
+	public void testLeadingEmptyRowsAreNotRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Leading");
+		for (int i = 0; i < 4; i++) {
+			sheet.createRow(i);
+		}
+		sheet.getRow(2).createCell(0).setCellValue("header");
+		sheet.getRow(3).createCell(0).setCellValue("data");
+		sheet.removeRow(sheet.getRow(0));
+		sheet.removeRow(sheet.getRow(1));
+		assertEquals(2, sheet.getFirstRowNum());
+		assertEquals(3, sheet.getLastRowNum());
+		assertNull(sheet.getRow(0));
+		assertNull(sheet.getRow(1));
+		sheet.removeRow(sheet.getRow(2));
+		assertEquals(3, sheet.getFirstRowNum());
+	}
+
+	@Test
+	public void testRowBoundsAfterRemovingRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Removed");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		sheet.createRow(1).createCell(0).setCellValue("data");
+		assertEquals(1, sheet.getLastRowNum());
+		sheet.removeRow(sheet.getRow(1));
+		assertEquals(0, sheet.getLastRowNum());
+		sheet.removeRow(sheet.getRow(0));
+		assertEquals(-1, sheet.getFirstRowNum());
+		assertEquals(-1, sheet.getLastRowNum());
+	}
+
+	@Test
+	public void testRowsBetweenContentAndCreatedRowExist() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Gap");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		((OdsSheet) sheet).getSodsSheet().appendRows(4);
+		sheet.createRow(4).createCell(0).setCellValue("data");
+		assertEquals(4, sheet.getLastRowNum());
+		for (int i = 0; i <= 4; i++) {
+			assertNotNull("row " + i, sheet.getRow(i));
+		}
+	}
+
+	/** A removed row between data rows is still returned; it has default height and is visible. */
+	@Test
+	public void testRemovedRowResetsHeightAndVisibility() throws IOException {
+		OdsWorkbook written = new OdsWorkbook();
+		Sheet writtenSheet = written.createSheet("S");
+		for (int i = 0; i < 4; i++) {
+			writtenSheet.createRow(i).createCell(0).setCellValue("row " + i);
+		}
+		writtenSheet.getRow(2).setZeroHeight(true);
+		writtenSheet.getRow(2).setHeightInPoints(40f);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		written.write(out);
+		Sheet sheet = new OdsWorkbook(new ByteArrayInputStream(out.toByteArray())).getSheet("S");
+		sheet.removeRow(sheet.getRow(2));
+		Row removed = sheet.getRow(2);
+		assertFalse(removed.getZeroHeight());
+		assertEquals(15.0f, removed.getHeightInPoints(), 0.001f);
 	}
 }

@@ -6,6 +6,9 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.function.Supplier;
 
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -13,10 +16,12 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.junit.Test;
 import org.spdx.spreadsheetstore.SpreadsheetTestUtils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Row and cell bounds of ODS match XLS and XLSX for the same sequence of calls.
@@ -63,9 +68,33 @@ public class RowApiParityTest {
 		}
 	}
 
+	/** Builds the layout, writes and reloads the workbook, applies the change, then asserts as {@link #assertParity}. */
+	private static void assertParityAfterReload(Layout layout, Layout change) {
+		String expected = null;
+		for (Supplier<Workbook> factory : SpreadsheetTestUtils.WORKBOOK_FACTORIES) {
+			try (Workbook written = factory.get()) {
+				layout.build(written, written.createSheet("S"));
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				written.write(out);
+				InputStream in = new ByteArrayInputStream(out.toByteArray());
+				try (Workbook workbook = written instanceof OdsWorkbook ? new OdsWorkbook(in) : WorkbookFactory.create(in)) {
+					Sheet sheet = workbook.getSheet("S");
+					change.build(workbook, sheet);
+					String actual = snapshot(sheet);
+					if (expected == null) {
+						expected = actual;
+					}
+					assertEquals(workbook.getClass().getSimpleName(), expected, actual);
+				}
+			} catch (java.io.IOException e) {
+				throw new AssertionError(e);
+			}
+		}
+	}
+
 	private static void content(Sheet sheet, int row, int col) {
 		Row r = sheet.getRow(row) != null ? sheet.getRow(row) : sheet.createRow(row);
-		r.createCell(col).setCellValue("x");
+		r.createCell(col).setCellValue(row + ":" + col); // Distinct values: SODS stores identical trailing rows as one repeated row, and writing to the last one changes all of them
 	}
 
 	@Test
@@ -80,6 +109,96 @@ public class RowApiParityTest {
 	@Test
 	public void emptySheet() {
 		assertParity((wb, sheet) -> { });
+	}
+
+	@Test
+	public void emptyRowsAfterDataRemoved() {
+		assertParity((wb, sheet) -> {
+			for (int i = 0; i < 5; i++) {
+				sheet.createRow(i);
+			}
+			content(sheet, 0, 0);
+			content(sheet, 1, 0);
+			for (int i = 2; i < 5; i++) {
+				sheet.removeRow(sheet.getRow(i));
+			}
+		});
+	}
+
+	@Test
+	public void emptyRowsBeforeDataRemoved() {
+		assertParity((wb, sheet) -> {
+			for (int i = 0; i < 4; i++) {
+				sheet.createRow(i);
+			}
+			content(sheet, 2, 0);
+			content(sheet, 3, 0);
+			sheet.removeRow(sheet.getRow(0));
+			sheet.removeRow(sheet.getRow(1));
+		});
+	}
+
+	@Test
+	public void firstAndLastRowRemoved() {
+		assertParity((wb, sheet) -> {
+			for (int i = 0; i < 4; i++) {
+				content(sheet, i, 0);
+			}
+			sheet.removeRow(sheet.getRow(0));
+			sheet.removeRow(sheet.getRow(3));
+		});
+	}
+
+	@Test
+	public void allRowsRemoved() {
+		assertParity((wb, sheet) -> {
+			content(sheet, 0, 0);
+			content(sheet, 1, 0);
+			sheet.removeRow(sheet.getRow(1));
+			sheet.removeRow(sheet.getRow(0));
+		});
+	}
+
+	@Test
+	public void loadedLastRowRemoved() {
+		assertParityAfterReload(
+				(wb, sheet) -> {
+					for (int i = 0; i < 4; i++) {
+						content(sheet, i, 0);
+					}
+				},
+				(wb, sheet) -> {
+					sheet.removeRow(sheet.getRow(3));
+					sheet.getRow(3); // probe before bounds are read
+				});
+	}
+
+	@Test
+	public void loadedStyledCellRemoved() {
+		assertParityAfterReload(
+				(wb, sheet) -> {
+					content(sheet, 0, 0);
+					content(sheet, 0, 1);
+					CellStyle style = wb.createCellStyle();
+					style.setAlignment(HorizontalAlignment.CENTER);
+					sheet.getRow(0).getCell(1).setCellStyle(style);
+				},
+				(wb, sheet) -> {
+					Row row = sheet.getRow(0);
+					row.removeCell(row.getCell(1));
+				});
+	}
+
+	@Test
+	public void loadedRowRecreated() {
+		assertParityAfterReload(
+				(wb, sheet) -> {
+					content(sheet, 0, 0);
+					content(sheet, 1, 0);
+					content(sheet, 1, 2);
+					sheet.getRow(1).setZeroHeight(true);
+				},
+				(wb, sheet) -> assertFalse(sheet.createRow(1).getZeroHeight()));
 	}
 
 	@Test
