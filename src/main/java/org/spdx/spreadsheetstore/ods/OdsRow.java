@@ -37,11 +37,12 @@ public class OdsRow implements Row {
 	}
 
 	/**
-	 * Clears all cells in this row, setting their SODS range values to null.
+	 * Clears value, formula, annotation and style of every cell in this row.
 	 */
-	public void clear() {
-		for (OdsCell cell : cells.values()) {
-			cell.getSodsRange().setValue(null);
+	public synchronized void clear() {
+		com.github.miachm.sods.Sheet sodsSheet = sheet.getSodsSheet();
+		if (rowNum < sodsSheet.getMaxRows() && sodsSheet.getMaxColumns() > 0) {
+			sodsSheet.getRange(rowNum, 0, 1, sodsSheet.getMaxColumns()).clear();
 		}
 		cells.clear();
 	}
@@ -95,38 +96,30 @@ public class OdsRow implements Row {
 		return null;
 	}
 
+	// A cell exists if it has a value, formula, annotation or non-default style (see getCell).
 	@Override
 	public short getFirstCellNum() {
-		com.github.miachm.sods.Range dataRange = sheet.getSodsSheet().getDataRange();
-		if (!cells.isEmpty()) {
-			int col = cells.firstKey();
-			if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-				col = Math.min(col, dataRange.getColumn());
+		int maxCols = sheet.getSodsSheet().getMaxColumns();
+		for (int col = 0; col < maxCols; col++) {
+			if (getCell(col) != null) {
+				return toShort(col);
 			}
-			return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
-		}
-		if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-			int col = dataRange.getColumn();
-			return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
 		}
 		return -1;
 	}
 
 	@Override
 	public short getLastCellNum() {
-		com.github.miachm.sods.Range dataRange = sheet.getSodsSheet().getDataRange();
-		if (!cells.isEmpty()) {
-			int nextCol = cells.lastKey() + 1;
-			if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-				nextCol = Math.max(nextCol, dataRange.getLastColumn() + 1);
+		for (int col = sheet.getSodsSheet().getMaxColumns() - 1; col >= 0; col--) {
+			if (getCell(col) != null) {
+				return toShort(col + 1);
 			}
-			return nextCol > Short.MAX_VALUE ? Short.MAX_VALUE : (short) nextCol;
-		}
-		if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-			int nextCol = dataRange.getLastColumn() + 1;
-			return nextCol > Short.MAX_VALUE ? Short.MAX_VALUE : (short) nextCol;
 		}
 		return -1;
+	}
+
+	private static short toShort(int col) {
+		return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
 	}
 
 	@Override
@@ -217,10 +210,10 @@ public class OdsRow implements Row {
 		return cellIterator();
 	}
 	@Override
-	public void removeCell(Cell cell) {
+	public synchronized void removeCell(Cell cell) {
 		if (cell instanceof OdsCell) {
 			int col = cell.getColumnIndex();
-			((OdsCell) cell).getSodsRange().setValue(null);
+			((OdsCell) cell).getSodsRange().clear();
 			cells.remove(col);
 		}
 	}

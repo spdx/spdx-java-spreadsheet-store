@@ -7,6 +7,10 @@
  */
 package org.spdx.spreadsheetstore.ods;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -17,6 +21,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -165,7 +170,7 @@ public class OdsWorkbookTest {
 		assertEquals("This is a comment", cell.getCellComment().getString().getString());
 
 		cell.removeCellComment();
-		org.junit.Assert.assertNull(cell.getCellComment());
+		assertNull(cell.getCellComment());
 	}
 
 	@Test
@@ -204,7 +209,7 @@ public class OdsWorkbookTest {
 		OdsWorkbook workbook = new OdsWorkbook();
 		OdsCellStyle style = (OdsCellStyle) workbook.createCellStyle();
 		style.setBorderBottom(null);
-		org.junit.Assert.assertNull(style.getBorderBottom());
+		assertNull(style.getBorderBottom());
 	}
 
 	@Test
@@ -258,8 +263,8 @@ public class OdsWorkbookTest {
 		Row row = sheet.createRow(0);
 		Cell cell = row.createCell(0);
 		cell.setCellValue(-5.0);
-		org.junit.Assert.assertNull(cell.getLocalDateTimeCellValue());
-		org.junit.Assert.assertNull(cell.getDateCellValue());
+		assertNull(cell.getLocalDateTimeCellValue());
+		assertNull(cell.getDateCellValue());
 	}
 
 	// Regression test: real POI throws IllegalStateException reading a date from a
@@ -342,5 +347,152 @@ public class OdsWorkbookTest {
 		OdsWorkbook workbook = new OdsWorkbook();
 		org.apache.poi.ss.usermodel.Font font = workbook.findFont(false, (short) 0, (short) 200, null, false, false, (short) 0, (byte) 0);
 		// Should return without NPE
+	}
+
+	/** Empty rows after the last content row are not rows (as in POI). */
+	@Test
+	public void testTrailingEmptyRowsAreNotRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Trailing");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		sheet.createRow(1).createCell(0).setCellValue("data");
+		((OdsSheet) sheet).getSodsSheet().appendRows(3);
+
+		assertEquals(0, sheet.getFirstRowNum());
+		assertEquals(1, sheet.getLastRowNum());
+		assertNotNull(sheet.getRow(1));
+		assertNull(sheet.getRow(2));
+		assertNull(sheet.getRow(4));
+		int rowCount = 0;
+		for (Row row : sheet) {
+			assertNotNull(row);
+			rowCount++;
+		}
+		assertEquals(2, rowCount);
+	}
+
+	@Test
+	public void testStyledEmptyCellsDoNotCountAsContent() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Styled");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		com.github.miachm.sods.Sheet sodsSheet = ((OdsSheet) sheet).getSodsSheet();
+		sodsSheet.appendRows(2);
+		com.github.miachm.sods.Style bold = new com.github.miachm.sods.Style();
+		bold.setBold(true);
+		sodsSheet.getRange(1, 0, 2, 1).setStyle(bold); // styled blank cells after the data
+		assertTrue(sodsSheet.getRange(2, 0).getStyle().isBold());
+		assertEquals(0, sheet.getLastRowNum());
+		assertNull(sheet.getRow(1));
+		assertNull(sheet.getRow(2));
+	}
+
+	@Test
+	public void testEmptyRowBetweenDataIsKept() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Interior");
+		sheet.createRow(0).createCell(0).setCellValue("first");
+		// Row 3 inside the appended block: SODS writes to the last row of a trailing block hit the whole block
+		((OdsSheet) sheet).getSodsSheet().appendRows(4);
+		sheet.createRow(3).createCell(0).setCellValue("last");
+		assertEquals(3, sheet.getLastRowNum());
+		for (int i = 1; i <= 2; i++) {
+			assertNotNull("row " + i, sheet.getRow(i));
+			assertNull("row " + i, sheet.getRow(i).getCell(0));
+		}
+		assertNull(sheet.getRow(4));
+	}
+
+	@Test
+	public void testSheetWithOnlyEmptyRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("OnlyEmpty");
+		((OdsSheet) sheet).getSodsSheet().appendRows(5);
+		assertEquals(-1, sheet.getFirstRowNum());
+		assertEquals(-1, sheet.getLastRowNum());
+		assertNull(sheet.getRow(0));
+		assertFalse(sheet.iterator().hasNext());
+	}
+
+	@Test
+	public void testCreateRowAfterTrailingEmptyRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Append");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		((OdsSheet) sheet).getSodsSheet().appendRows(3);
+		assertNull(sheet.getRow(2));
+		Row row = sheet.createRow(2);
+		row.createCell(0).setCellValue("new");
+		assertNotNull(sheet.getRow(2));
+		assertEquals(2, sheet.getLastRowNum());
+		assertEquals("new", sheet.getRow(2).getCell(0).getStringCellValue());
+	}
+
+	@Test
+	public void testLeadingEmptyRowsAreNotRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Leading");
+		for (int i = 0; i < 4; i++) {
+			sheet.createRow(i);
+		}
+		sheet.getRow(2).createCell(0).setCellValue("header");
+		sheet.getRow(3).createCell(0).setCellValue("data");
+		sheet.removeRow(sheet.getRow(0));
+		sheet.removeRow(sheet.getRow(1));
+		assertEquals(2, sheet.getFirstRowNum());
+		assertEquals(3, sheet.getLastRowNum());
+		assertNull(sheet.getRow(0));
+		assertNull(sheet.getRow(1));
+		sheet.removeRow(sheet.getRow(2));
+		assertEquals(3, sheet.getFirstRowNum());
+	}
+
+	@Test
+	public void testRowBoundsAfterRemovingRows() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Removed");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		sheet.createRow(1).createCell(0).setCellValue("data");
+		assertEquals(1, sheet.getLastRowNum());
+		sheet.removeRow(sheet.getRow(1));
+		assertEquals(0, sheet.getLastRowNum());
+		sheet.removeRow(sheet.getRow(0));
+		assertEquals(-1, sheet.getFirstRowNum());
+		assertEquals(-1, sheet.getLastRowNum());
+	}
+
+	@Test
+	public void testRowsBetweenContentAndCreatedRowExist() {
+		OdsWorkbook workbook = new OdsWorkbook();
+		Sheet sheet = workbook.createSheet("Gap");
+		sheet.createRow(0).createCell(0).setCellValue("header");
+		((OdsSheet) sheet).getSodsSheet().appendRows(4);
+		sheet.createRow(4).createCell(0).setCellValue("data");
+		assertEquals(4, sheet.getLastRowNum());
+		for (int i = 0; i <= 4; i++) {
+			assertNotNull("row " + i, sheet.getRow(i));
+		}
+		for (int i = 1; i <= 3; i++) {
+			assertNull("row " + i, sheet.getRow(i).getCell(0));
+		}
+	}
+
+	/** A removed row between data rows is still returned; it has default height and is visible. */
+	@Test
+	public void testRemovedRowResetsHeightAndVisibility() throws IOException {
+		OdsWorkbook written = new OdsWorkbook();
+		Sheet writtenSheet = written.createSheet("S");
+		for (int i = 0; i < 4; i++) {
+			writtenSheet.createRow(i).createCell(0).setCellValue("row " + i);
+		}
+		writtenSheet.getRow(2).setZeroHeight(true);
+		writtenSheet.getRow(2).setHeightInPoints(40f);
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		written.write(out);
+		Sheet sheet = new OdsWorkbook(new ByteArrayInputStream(out.toByteArray())).getSheet("S");
+		sheet.removeRow(sheet.getRow(2));
+		Row removed = sheet.getRow(2);
+		assertFalse(removed.getZeroHeight());
+		assertEquals(15.0f, removed.getHeightInPoints(), 0.001f);
 	}
 }
