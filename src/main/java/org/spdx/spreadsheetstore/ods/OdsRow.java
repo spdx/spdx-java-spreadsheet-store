@@ -95,38 +95,30 @@ public class OdsRow implements Row {
 		return null;
 	}
 
+	// A cell exists if it has a value, formula, annotation or non-default style (see getCell).
 	@Override
 	public short getFirstCellNum() {
-		com.github.miachm.sods.Range dataRange = sheet.getSodsSheet().getDataRange();
-		if (!cells.isEmpty()) {
-			int col = cells.firstKey();
-			if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-				col = Math.min(col, dataRange.getColumn());
+		int maxCols = sheet.getSodsSheet().getMaxColumns();
+		for (int col = 0; col < maxCols; col++) {
+			if (getCell(col) != null) {
+				return toShort(col);
 			}
-			return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
-		}
-		if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-			int col = dataRange.getColumn();
-			return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
 		}
 		return -1;
 	}
 
 	@Override
 	public short getLastCellNum() {
-		com.github.miachm.sods.Range dataRange = sheet.getSodsSheet().getDataRange();
-		if (!cells.isEmpty()) {
-			int nextCol = cells.lastKey() + 1;
-			if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-				nextCol = Math.max(nextCol, dataRange.getLastColumn() + 1);
+		for (int col = sheet.getSodsSheet().getMaxColumns() - 1; col >= 0; col--) {
+			if (getCell(col) != null) {
+				return toShort(col + 1);
 			}
-			return nextCol > Short.MAX_VALUE ? Short.MAX_VALUE : (short) nextCol;
-		}
-		if (dataRange != null && rowNum >= dataRange.getRow() && rowNum <= dataRange.getLastRow()) {
-			int nextCol = dataRange.getLastColumn() + 1;
-			return nextCol > Short.MAX_VALUE ? Short.MAX_VALUE : (short) nextCol;
 		}
 		return -1;
+	}
+
+	private static short toShort(int col) {
+		return col > Short.MAX_VALUE ? Short.MAX_VALUE : (short) col;
 	}
 
 	@Override
