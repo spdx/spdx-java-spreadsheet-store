@@ -46,6 +46,14 @@ public class OdsSheet implements Sheet {
 	private final OdsWorkbook workbook;
 	private final com.github.miachm.sods.Sheet sodsSheet;
 	private final NavigableMap<Integer, OdsRow> rows = new TreeMap<>();
+	/**
+	 * Lowest and highest SODS rows that may hold content, -1 if none.
+	 * Set by the first scan, then only narrowed.
+	 */
+	private int firstContentRow = -1;
+	private int lastContentRow = -1;
+	private boolean contentScanned = false;
+	private static final int PROBE_COLUMNS = 8;
 
 	private final List<CellRangeAddress> mergedRegions = new ArrayList<>();
 
@@ -75,10 +83,12 @@ public class OdsSheet implements Sheet {
 			throw new IllegalArgumentException("Row number must be >= 0");
 		}
 		int currentRows = sodsSheet.getMaxRows();
+		OdsRow row = new OdsRow(this, rownum);
 		if (rownum >= currentRows) {
 			sodsSheet.appendRows(rownum - currentRows + 1);
+		} else {
+			resetRow(row); // replaces the existing row, as in POI
 		}
-		OdsRow row = new OdsRow(this, rownum);
 		rows.put(rownum, row);
 		return row;
 	}
@@ -89,7 +99,10 @@ public class OdsSheet implements Sheet {
 		if (row != null) {
 			return row;
 		}
-		if (rownum >= 0 && rownum < sodsSheet.getMaxRows()) {
+		// Null outside the content range, as in POI: SODS loads the empty rows LibreOffice
+		// writes around the data as real rows.
+		// Empty rows inside the range are returned; POI returns null for those not created.
+		if (rownum >= 0 && rownum < sodsSheet.getMaxRows() && inContentRange(rownum)) {
 			OdsRow newRow = new OdsRow(this, rownum);
 			rows.put(rownum, newRow);
 			return newRow;
@@ -98,64 +111,101 @@ public class OdsSheet implements Sheet {
 	}
 
 	@Override
-	public void removeRow(Row row) {
+	public synchronized void removeRow(Row row) {
 		if (row instanceof OdsRow) {
 			int rowNum = row.getRowNum();
-			OdsRow odsRow = (OdsRow) row;
-			odsRow.clear();
+			resetRow((OdsRow) row);
 			rows.remove(rowNum);
+			// Narrow the cached range so getRow returns null for the removed edge row.
+			if (contentScanned) {
+				scanContentRows();
+			}
 		}
 	}
 
-	private boolean hasData() {
-		if (!rows.isEmpty()) {
-			return true;
+	/** Leaves the row as POI has it after the row is dropped: no cells, default height, visible. */
+	private void resetRow(OdsRow row) {
+		row.clear();
+		int rowNum = row.getRowNum();
+		if (rowNum < sodsSheet.getMaxRows()) {
+			sodsSheet.setRowHeight(rowNum, null);
+			sodsSheet.showRow(rowNum);
 		}
-		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
-		if (dataRange == null) {
+	}
+
+	/**
+	 * Finds the first and last rows with content.
+	 * First scan covers the whole sheet; later scans narrow the cached range.
+	 */
+	private void scanContentRows() {
+		if (contentScanned && firstContentRow < 0) {
+			return;
+		}
+		int first = contentScanned ? firstContentRow : 0;
+		int last = contentScanned ? lastContentRow : sodsSheet.getMaxRows() - 1;
+		while (first <= last && !rowHasContent(first)) {
+			first++;
+		}
+		while (last >= first && !rowHasContent(last)) {
+			last--;
+		}
+		boolean hasContent = first <= last;
+		firstContentRow = hasContent ? first : -1;
+		lastContentRow = hasContent ? last : -1;
+		contentScanned = true;
+	}
+
+	/**
+	 * @param row SODS row index
+	 * @return true if any cell in the row has a value, formula or annotation (style alone is not content)
+	 */
+	private boolean rowHasContent(int row) {
+		int maxCols = sodsSheet.getMaxColumns();
+		// Probe leading cells first: content rows exit without a full-width read.
+		int probe = Math.min(maxCols, PROBE_COLUMNS);
+		for (int col = 0; col < probe; col++) {
+			com.github.miachm.sods.Range cell = sodsSheet.getRange(row, col);
+			if (cell.getValue() != null || cell.getFormula() != null || cell.getAnnotation() != null) {
+				return true;
+			}
+		}
+		if (maxCols <= probe) {
 			return false;
 		}
-		for (int r = dataRange.getRow(); r <= dataRange.getLastRow(); r++) {
-			for (int c = dataRange.getColumn(); c <= dataRange.getLastColumn(); c++) {
-				com.github.miachm.sods.Range range = sodsSheet.getRange(r, c);
-				if (range.getValue() != null || range.getFormula() != null || range.getAnnotation() != null) {
-					return true;
-				}
+		com.github.miachm.sods.Range rest = sodsSheet.getRange(row, probe, 1, maxCols - probe);
+		return anyNonNull(rest.getValues()[0]) || anyNonNull(rest.getFormulas()[0])
+				|| anyNonNull(rest.getAnnotations()[0]);
+	}
+
+	private static boolean anyNonNull(Object[] cells) {
+		for (Object cell : cells) {
+			if (cell != null) {
+				return true;
 			}
 		}
 		return false;
 	}
 
-	@Override
-	public int getFirstRowNum() {
-		if (!hasData()) {
-			return -1;
+	private boolean inContentRange(int row) {
+		if (!contentScanned) {
+			scanContentRows();
 		}
-		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
-		if (!rows.isEmpty()) {
-			int firstRow = rows.firstKey();
-			if (dataRange != null) {
-				return Math.min(firstRow, dataRange.getRow());
-			}
-			return firstRow;
-		}
-		return dataRange.getRow();
+		return row >= firstContentRow && row <= lastContentRow;
 	}
 
 	@Override
-	public int getLastRowNum() {
-		if (!hasData()) {
-			return -1;
+	public synchronized int getFirstRowNum() {
+		scanContentRows();
+		if (rows.isEmpty()) {
+			return firstContentRow;
 		}
-		com.github.miachm.sods.Range dataRange = sodsSheet.getDataRange();
-		if (!rows.isEmpty()) {
-			int lastRow = rows.lastKey();
-			if (dataRange != null) {
-				return Math.max(lastRow, dataRange.getLastRow());
-			}
-			return lastRow;
-		}
-		return dataRange.getLastRow();
+		return firstContentRow < 0 ? rows.firstKey() : Math.min(rows.firstKey(), firstContentRow);
+	}
+
+	@Override
+	public synchronized int getLastRowNum() {
+		scanContentRows();
+		return rows.isEmpty() ? lastContentRow : Math.max(rows.lastKey(), lastContentRow);
 	}
 
 	@Override
