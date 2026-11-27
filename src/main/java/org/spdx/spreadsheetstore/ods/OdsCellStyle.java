@@ -286,11 +286,6 @@ public class OdsCellStyle implements CellStyle {
 	}
 
 	@Override
-	public int getFontIndexAsInt() {
-		return fontIndex;
-	}
-
-	@Override
 	public short getIndex() {
 		return index;
 	}

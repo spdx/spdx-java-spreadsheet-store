@@ -135,9 +135,4 @@ public class OdsFont implements Font {
 	public int getIndex() {
 		return this.index;
 	}
-
-	@Override
-	public int getIndexAsInt() {
-		return this.index;
-	}
 }

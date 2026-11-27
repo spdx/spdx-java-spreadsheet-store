@@ -443,9 +443,4 @@ public class OdsWorkbook implements Workbook {
 
 	@Override
 	public void removeName(Name name) {}
-
-	@Override
-	public int getNumberOfFontsAsInt() {
-		return fonts.size();
-	}
 }
